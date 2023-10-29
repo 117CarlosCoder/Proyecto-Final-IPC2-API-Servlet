@@ -6,6 +6,7 @@ import com.ipc2.proyectofinalservlet.data.AdminDB;
 import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
+import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.AdminService;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
 import jakarta.servlet.ServletException;
@@ -18,6 +19,7 @@ import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.util.List;
 
 @WebServlet(name = "AdminManagerServlet", urlPatterns = {"/v1/admin-servlet/*"})
 public class AdminController extends HttpServlet {
@@ -26,7 +28,18 @@ public class AdminController extends HttpServlet {
     private AdminService adminService;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doGet(req, resp);
+        HttpSession session = req.getSession();
+        Connection conexion = (Connection) session.getAttribute("conexion");
+
+        String uri = req.getRequestURI();
+        User user = (User) session.getAttribute("user");
+
+        if (uri.endsWith("/cargar-categorias")) {
+            List<Categoria> categorias = listarCategoriaCodigo(conexion,user.getCodigo());
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            objectMapper.writeValue(resp.getWriter(), categorias);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
     }
 
     @Override
@@ -81,6 +94,11 @@ public class AdminController extends HttpServlet {
         AdminDB adminDB = new AdminDB(conexion);
         adminService = new AdminService(conexion);
         adminService.crearCategoria(codigo,nombre,descripcion);
+    }
+
+    public List<Categoria> listarCategoriaCodigo(Connection conexion, int codigo){
+        adminService = new AdminService(conexion);
+        return adminService.listarCategoriaCodigo(codigo);
     }
 
     public void actualizarCategoria(Connection conexion,int codigo, String nombre, String descripcion){

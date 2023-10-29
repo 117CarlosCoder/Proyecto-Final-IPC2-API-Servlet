@@ -2,9 +2,8 @@ package com.ipc2.proyectofinalservlet.controller.Sesioncontroller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.data.Conexion;
-import com.ipc2.proyectofinalservlet.data.SesionDB;
+import com.ipc2.proyectofinalservlet.model.User.Rol;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.model.User.login;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
@@ -19,9 +18,21 @@ import org.apache.http.entity.ContentType;
 import java.io.IOException;
 import java.sql.Connection;
 
-@WebServlet(name = "SesionManagerServlet", urlPatterns = {"/v1/sesion-servlet"})
+@WebServlet(name = "SesionManagerServlet", urlPatterns = {"/v1/sesion-servlet/*"})
 public class LoginController extends HttpServlet {
     private  UserService usuarioService;
+    private User usergeneral;
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Conexion conectar = new Conexion();
+        String uri = req.getRequestURI();
+
+        if (uri.endsWith("/cerrar-sesion")) {
+            conectar.desconectar();
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -29,6 +40,7 @@ public class LoginController extends HttpServlet {
         Connection conexion = conectar.obtenerConexion();
         HttpSession session = req.getSession();
         session.setMaxInactiveInterval(3600);
+
         System.out.println("Sesion Abierta: " + session);
         session.setAttribute("conexion", conexion);
 
@@ -37,8 +49,13 @@ public class LoginController extends HttpServlet {
 
         try {
             System.out.println("iniciando sesion");
-            if (validarUsuario(req,user.getUsername(), user.getPassword(), user.getUsername())){
-                System.out.println("valido");
+            if (validarUsuario(req,user.getUsername(), user.getPassword(), user.getUsername(), session)){
+                System.out.println("valido : ");
+                System.out.println(usergeneral);
+                Rol rol = new Rol(usergeneral.getRol());
+                ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+                objectMapper.writeValue(resp.getWriter(), rol);
+                System.out.println(rol);
                 resp.setStatus(HttpServletResponse.SC_OK);
             }
             else {
@@ -53,12 +70,12 @@ public class LoginController extends HttpServlet {
 
     }
 
-    public boolean validarUsuario(HttpServletRequest req,String username, String password, String email) {
-        System.out.println("validar" );
+    public boolean validarUsuario(HttpServletRequest req,String username, String password, String email,HttpSession session) {
+        System.out.println("validar : ");
         var oUsuario = usuarioService.obtenerUsuario(username, password, email);
         if (oUsuario.isEmpty()) return false;
-        User usuarioLogin = oUsuario.get();
-        req.setAttribute("user",usuarioLogin);
+        usergeneral = oUsuario.get();
+        session.setAttribute("user",usergeneral);
         return true ;
     }
 
@@ -76,5 +93,7 @@ public class LoginController extends HttpServlet {
             cargarDatosService.crearComision(cantidad);
         }
     }
+
+
 
 }
