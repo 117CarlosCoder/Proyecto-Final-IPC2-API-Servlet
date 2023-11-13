@@ -1,13 +1,13 @@
 package com.ipc2.proyectofinalservlet.data;
 
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Entrevista;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
+import com.ipc2.proyectofinalservlet.model.Applicant.OfertaCostos;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
+import com.ipc2.proyectofinalservlet.model.User.User;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.lang.model.type.NullType;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +26,42 @@ public class ApplicantDB    {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, Date fechaExpiracion){
+        String query = "INSERT INTO tarjeta VALUES(?,?,?,?,?,?,?)";
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, Types.NULL  );
+            preparedStatement.setInt(2,codigoUsuario);
+            preparedStatement.setString(3,Titular);
+            preparedStatement.setInt(4,numero);
+            preparedStatement.setInt(5,codigoSeguridad);
+            preparedStatement.setDate(6,fechaExpiracion);
+            preparedStatement.setInt(7,0);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<Categoria> listarCategorias(){
+        String query = "SELECT * FROM categoria";
+        List<Categoria> categorias = new ArrayList<>();
+        Categoria categoria = null;
+        try(var select = conexion.prepareStatement(query)) {
+            ResultSet resultset = select.executeQuery();
+            while (resultset.next()) {
+                var codigo = resultset.getInt("codigo");
+                var nombre = resultset.getString("nombre");
+                var descripcion = resultset.getString("descripcion");
+                categoria = new Categoria(codigo,nombre,descripcion);
+                categorias.add(categoria);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return categorias;
     }
 
     public void crearCategorias( int usuario,int categoria){
@@ -51,17 +87,17 @@ public class ApplicantDB    {
         }
     }
 
-    public List<Ofertas> listarOfertas() {
-        String query = "SELECT * FROM ofertas";
-        List<Ofertas> ofertas = new ArrayList<>();
-        Ofertas oferta = null;
+    public List<OfertasEmpresa> listarOfertas() {
+        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo ";
+        List<OfertasEmpresa> ofertas = new ArrayList<>();
+        OfertasEmpresa oferta = null;
         try (var select = conexion.prepareStatement(query)) {
             ResultSet resultset = select.executeQuery();
             while (resultset.next()) {
                 var codigo = resultset.getInt("codigo");
                 var nombre = resultset.getString("nombre");
                 var descripcion = resultset.getString("descripcion");
-                var empresa = resultset.getInt("empresa");
+                var empresa = resultset.getString("empresa");
                 var categoria = resultset.getInt("categoria");
                 var estado = resultset.getString("estado");
                 var fechaPublicacion = resultset.getDate("fechaPublicacion");
@@ -71,7 +107,7 @@ public class ApplicantDB    {
                 var ubicacion = resultset.getString("ubicacion");
                 var detalles = resultset.getString("detalles");
                 var usuarioElegido = resultset.getInt("usuarioElegido");
-                oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
+                oferta = new OfertasEmpresa(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
                 ofertas.add(oferta);
             }
 
@@ -115,10 +151,10 @@ public class ApplicantDB    {
     }
 
 
-    public List<Solicitudes> listarPostulaciones(int usuarioN) {
-        String query = "SELECT * FROM solicitudes WHERE usuario = ?";
-        List<Solicitudes> solicitudes = new ArrayList<>();
-        Solicitudes solicitud = null;
+    public List<EstadoSolicitud> listarPostulaciones(int usuarioN) {
+        String query = " SELECT s.codigo, s.codigoOferta, s.usuario, o.estado, o.nombre, u.nombre AS 'empresa'FROM solicitudes s JOIN ofertas o ON s.codigoOferta = o.codigo JOIN usuarios u ON o.empresa = u.codigo WHERE s.usuario = ?";
+        List<EstadoSolicitud> solicitudes = new ArrayList<>();
+        EstadoSolicitud solicitud = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setInt(1, usuarioN);
@@ -129,9 +165,10 @@ public class ApplicantDB    {
                     var codigo = resultSet.getInt("codigo");
                     var codigoOferta = resultSet.getInt("codigoOferta");
                     var usuario = resultSet.getInt("usuario");
-                    var mensaje = resultSet.getString("mensaje");
-                    solicitud = new Solicitudes(codigo,codigoOferta,usuario,mensaje
-                    );
+                    var estado = resultSet.getString("estado");
+                    var nombre = resultSet.getString("nombre");
+                    var empresa = resultSet.getString("empresa");
+                    solicitud = new EstadoSolicitud(codigo,codigoOferta,usuario,estado,nombre,empresa);
                     solicitudes.add(solicitud);
                 }
             }
@@ -151,10 +188,10 @@ public class ApplicantDB    {
         }
     }
 
-    public List<Entrevista> listarEntrevistas(int usuarioN) {
-        String query = "SELECT * FROM entrevistas WHERE usuario = ? AND estado = 'PENDIENTE' ";
-        List<Entrevista> entrevistas = new ArrayList<>();
-        Entrevista entrevista = null;
+    public List<EntrevitaN> listarEntrevistas(int usuarioN) {
+        String query = "SELECT s.* ,o.nombre AS 'empresa' FROM entrevistas s JOIN ofertas o ON s.codigoOferta = o.codigo WHERE s.usuario = ? AND s.estado = 'PENDIENTE' ";
+        List<EntrevitaN> entrevistas = new ArrayList<>();
+        EntrevitaN entrevista = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setInt(1,usuarioN);
@@ -163,12 +200,16 @@ public class ApplicantDB    {
                 while (resultSet.next()) {
                     var codigo = resultSet.getInt("codigo");
                     var usuario = resultSet.getInt("usuario");
-                    var fecha = resultSet.getDate("fecha");
+                    var fechaSql = resultSet.getDate("fecha");
+                    var formatter = new SimpleDateFormat("yyyy-MM-dd"); // Define el formato de fecha
+                    var fecha = formatter.format(fechaSql);
                     var hora = resultSet.getString("hora");
                     var ubicacion = resultSet.getString("ubicacion");
                     var estado = resultSet.getString("estado");
                     var notas = resultSet.getString("notas");
-                    entrevista = new Entrevista(codigo,usuario,fecha,hora,ubicacion,estado,notas);
+                    var codigoOferta = resultSet.getInt("codigoOferta");
+                    var empresa = resultSet.getString("empresa");
+                    entrevista = new EntrevitaN(codigo,usuario,fecha,hora,ubicacion,estado,notas,codigoOferta,empresa);
                     entrevistas.add(entrevista);
                 }
             }
@@ -177,5 +218,31 @@ public class ApplicantDB    {
         }
 
         return entrevistas;
+    }
+
+    public List<OfertaCostos> listarOfertasCostos(int usuarioN) {
+        String query = "SELECT e.codigo,o.nombre AS 'Oferta' ,u.nombre AS 'Empresa',e.estado,c.cantidad FROM comision c ,entrevistas e INNER JOIN ofertas o ON o.codigo =  e.codigoOferta INNER JOIN usuarios u ON u.codigo = o.empresa WHERE e.usuario = ?";
+        List<OfertaCostos> ofertasCostos = new ArrayList<>();
+        OfertaCostos ofertaCostos = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1,usuarioN);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var oferta = resultSet.getString("Oferta");
+                    var empresa = resultSet.getString("Empresa");
+                    var estado = resultSet.getString("estado");
+                    var cantidad = resultSet.getInt("cantidad");
+                    ofertaCostos = new OfertaCostos(codigo,oferta,empresa,estado,cantidad);
+                    ofertasCostos.add(ofertaCostos);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar Ofertas Costos: " + e);
+        }
+
+        return ofertasCostos;
     }
 }

@@ -9,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 public class Postulante {
     private int codigo;
+    private int codigoOferta;
     private String nombre;
     private String email;
     private String curriculum;

@@ -10,13 +10,15 @@ import java.sql.Time;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Entrevista {
+public class EntrevistaInfo {
     private int codigo;
     private int usuario;
     private Date fecha;
-    private String hora;
+    private Time hora;
     private String ubicacion;
     private String estado;
     private String notas;
     private int codigoOferta;
+    private String nombre;
+    private String nombreOferta;
 }

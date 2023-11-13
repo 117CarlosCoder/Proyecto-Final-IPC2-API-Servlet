@@ -3,10 +3,7 @@ package com.ipc2.proyectofinalservlet.controller.EmployerController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.HelloServlet;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Entrevista;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Postulante;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.EmployerService;
 import jakarta.servlet.ServletException;
@@ -30,7 +27,8 @@ public class NominationController extends HelloServlet {
     private EmployerService employerService;
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         User user = (User) session.getAttribute("user");
@@ -45,7 +43,7 @@ public class NominationController extends HelloServlet {
         }
 
         if (uri.endsWith("/cargar-entrevistas")) {
-            List<Entrevista> entrevistas = listarEntrevistas(conexion);
+            List<EntrevistaInfo> entrevistas = listarEntrevistas(conexion);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             objectMapper.writeValue(resp.getWriter(), entrevistas);
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -54,7 +52,8 @@ public class NominationController extends HelloServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+
         Connection conexion = (Connection) session.getAttribute("conexion");
         int codigo = 0;
         if (req.getParameter("codigo")!=null){
@@ -68,7 +67,7 @@ public class NominationController extends HelloServlet {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/cargar-postulantes")) {
-            List<Solicitudes> solicitudes = listarPostulantes(conexion,codigo);
+            List<EstadoSolicitudPostulante> solicitudes = listarPostulantes(conexion,codigo);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             objectMapper.writeValue(resp.getWriter(), solicitudes);
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -85,8 +84,8 @@ public class NominationController extends HelloServlet {
         if (uri.endsWith("/generar-entrevista")) {
             Postulante postulante = (Postulante) session.getAttribute("postulante");
             Entrevista entrevista = readJsonEntrevista(resp,req);
-            generarEntrevista(conexion,entrevista.getCodigo(),postulante.getCodigo(),entrevista.getFecha(),entrevista.getHora(),entrevista.getUbicacion());
-            actualizarOfertaEstado(conexion,oferta);
+            generarEntrevista(conexion,postulante.getCodigo(),postulante.getCodigoOferta(),postulante.getCodigo(),entrevista.getFecha(),entrevista.getHora(),entrevista.getUbicacion());
+            actualizarOfertaEstado(conexion,entrevista.getCodigoOferta());
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
@@ -97,7 +96,8 @@ public class NominationController extends HelloServlet {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         int codigo = 0;
@@ -124,7 +124,7 @@ public class NominationController extends HelloServlet {
         employerService.actualizarOfertaEstado(usuario);
     }
 
-    public List<Solicitudes> listarPostulantes(Connection conexion, int empresa){
+    public List<EstadoSolicitudPostulante> listarPostulantes(Connection conexion, int empresa){
         employerService = new EmployerService(conexion);
         return employerService.listarPostulaciones(empresa);
     }
@@ -134,12 +134,12 @@ public class NominationController extends HelloServlet {
         return employerService.obtenerPostulante(usuario);
     }
 
-    private void generarEntrevista(Connection conexion, int codigo, int usuario, Date fecha, String hora, String ubicacion ){
+    private void generarEntrevista(Connection conexion, int codigo,int codigoOferta, int usuario, Date fecha, String hora, String ubicacion ){
         employerService = new EmployerService(conexion);
-        employerService.generarEntrevista(codigo,usuario,fecha,hora,ubicacion);
+        employerService.generarEntrevista(codigo,codigoOferta,usuario,fecha,hora,ubicacion);
     }
 
-    public List<Entrevista> listarEntrevistas(Connection conexion){
+    public List<EntrevistaInfo> listarEntrevistas(Connection conexion){
         employerService = new EmployerService(conexion);
         return employerService.listarEntrevistas();
     }

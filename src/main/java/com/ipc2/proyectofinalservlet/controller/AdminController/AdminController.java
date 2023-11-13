@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.data.AdminDB;
 import com.ipc2.proyectofinalservlet.data.CargaDB;
+import com.ipc2.proyectofinalservlet.model.Admin.Dashboard;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 import com.ipc2.proyectofinalservlet.model.User.User;
@@ -28,23 +29,47 @@ public class AdminController extends HttpServlet {
     private AdminService adminService;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
         User user = (User) session.getAttribute("user");
 
         if (uri.endsWith("/cargar-categorias")) {
-            List<Categoria> categorias = listarCategoriaCodigo(conexion,user.getCodigo());
+            List<Categoria> categorias = listarCategorias(conexion);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
             objectMapper.writeValue(resp.getWriter(), categorias);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+        if (uri.endsWith("/cargar-categoria")) {
+            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            Categoria categorias = listarCategoriaCodigo(conexion,codigo);
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), categorias);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+        if (uri.endsWith("/listar-dashboard")) {
+            Dashboard dashboard = listarDashboard(conexion);
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), dashboard);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
+        if (uri.endsWith("/listar-comision")) {
+            Comision comision = listarComision(conexion);
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), comision);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
@@ -62,7 +87,7 @@ public class AdminController extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
@@ -96,9 +121,24 @@ public class AdminController extends HttpServlet {
         adminService.crearCategoria(codigo,nombre,descripcion);
     }
 
-    public List<Categoria> listarCategoriaCodigo(Connection conexion, int codigo){
+    public Categoria listarCategoriaCodigo(Connection conexion, int codigo){
         adminService = new AdminService(conexion);
         return adminService.listarCategoriaCodigo(codigo);
+    }
+
+    public List<Categoria> listarCategorias(Connection conexion){
+        adminService = new AdminService(conexion);
+        return adminService.listarCategorias();
+    }
+
+    public Dashboard listarDashboard(Connection conexion){
+        adminService = new AdminService(conexion);
+        return adminService.listarDashboard();
+    }
+
+    public Comision listarComision(Connection conexion){
+        adminService = new AdminService(conexion);
+        return adminService.listarComision();
     }
 
     public void actualizarCategoria(Connection conexion,int codigo, String nombre, String descripcion){

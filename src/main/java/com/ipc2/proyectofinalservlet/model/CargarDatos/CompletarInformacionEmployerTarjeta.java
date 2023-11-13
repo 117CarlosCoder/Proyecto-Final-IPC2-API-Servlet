@@ -2,6 +2,8 @@ package com.ipc2.proyectofinalservlet.model.CargarDatos;
 
 import lombok.*;
 
+import java.sql.Date;
+
 @Getter
 @Setter
 @ToString
@@ -13,5 +15,6 @@ public class CompletarInformacionEmployerTarjeta {
     private String Titular;
     private int numero;
     private int codigoSeguridad;
+    private Date fechaExpiracion;
 }
 

@@ -3,6 +3,7 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Entrevista;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.EntrevitaN;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
 import com.ipc2.proyectofinalservlet.model.User.User;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -25,7 +27,8 @@ public class ApplicantInterviewController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession();
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         User user = (User) session.getAttribute("user");
@@ -33,9 +36,10 @@ public class ApplicantInterviewController extends HttpServlet {
         String uri = req.getRequestURI();
 
         if(uri.endsWith("/listar-entrevistas")) {
-            List<Entrevista> entrevistas = listarEntrevitas(conexion,user.getCodigo());
+            List<EntrevitaN> entrevistas = listarEntrevitas(conexion,user.getCodigo());
             System.out.println("usuario :" + user.getCodigo());
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
             objectMapper.writeValue(resp.getWriter(), entrevistas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
@@ -49,7 +53,7 @@ public class ApplicantInterviewController extends HttpServlet {
         }
     }
 
-    private List<Entrevista> listarEntrevitas(Connection conexion, int usuario){
+    private List<EntrevitaN> listarEntrevitas(Connection conexion, int usuario){
         applicantService = new ApplicantService(conexion);
         return applicantService.listarEntrevistas(usuario);
     }

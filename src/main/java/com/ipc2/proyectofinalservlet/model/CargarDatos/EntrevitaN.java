@@ -3,20 +3,22 @@ package com.ipc2.proyectofinalservlet.model.CargarDatos;
 import lombok.*;
 
 import java.sql.Date;
-import java.sql.Time;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Entrevista {
+
+public class EntrevitaN {
     private int codigo;
     private int usuario;
-    private Date fecha;
+    private String fecha;
     private String hora;
     private String ubicacion;
     private String estado;
     private String notas;
     private int codigoOferta;
+    private String empresa;
 }
