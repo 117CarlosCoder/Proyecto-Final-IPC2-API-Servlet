@@ -1,8 +1,9 @@
 package com.ipc2.proyectofinalservlet.service;
 
 import com.ipc2.proyectofinalservlet.data.ApplicantDB;
-import com.ipc2.proyectofinalservlet.data.CargaDB;
-import com.ipc2.proyectofinalservlet.model.Applicant.OfertaCostos;
+import com.ipc2.proyectofinalservlet.model.Applicant.EntrevistaOferta;
+import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
+import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 
 import java.sql.Connection;
@@ -54,6 +55,11 @@ public class ApplicantService {
         return applicantDB.listarOfertasCodigo(codigo);
     }
 
+    public List<OfertasEmpresaFecha> listarOfertasFecha(int usuario,String estado, String fechaA, String fechaB){
+        System.out.println("Listar Oferta Fecha");
+        return applicantDB.listarOfertasFecha(usuario,estado,fechaA,fechaB);
+    }
+
     public List<EstadoSolicitud> listarPostulaciones(int usuario){
         System.out.println("Listar Ofertas");
         return applicantDB.listarPostulaciones(usuario);
@@ -71,6 +77,20 @@ public class ApplicantService {
     public List<EntrevitaN> listarEntrevistas(int usuario){
         System.out.println("Listar Entrevistas");
         return applicantDB.listarEntrevistas(usuario);
+    }
+
+    public List<EntrevistaOferta> listarEntrevistaInfo(int usuario){
+        System.out.println("Listar Entrevistas");
+        return applicantDB.listarEntrevistasInfo(usuario);
+    }
+
+    public List<RegistroPostulacion> listarRegistroPostulacio (int usuario, String fechaA, String fechaB){
+        System.out.println("Listar Registro Postulacion");
+        return applicantDB.listarRegistros(usuario, fechaA, fechaB);
+    }
+    public void registrarPostulacion(int usuario, String oferta, String fecha){
+        System.out.println("Registrar Postulacion");
+        applicantDB.registroPostulaciones(usuario, oferta,fecha);
     }
 
 

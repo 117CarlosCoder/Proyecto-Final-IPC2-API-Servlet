@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.data.AdminDB;
 import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.model.Admin.Dashboard;
+import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 import com.ipc2.proyectofinalservlet.model.User.User;
@@ -19,6 +20,7 @@ import jakarta.servlet.http.HttpSession;
 import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.List;
 
@@ -79,8 +81,11 @@ public class AdminController extends HttpServlet {
             crearCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
-        if (uri.endsWith("/reportes")) {
+        if (uri.endsWith("/crear-registro-comision")) {
 
+            RegistroComision registroComision = readJsonRegistroComision(resp,req,conexion);
+            registrarComision(conexion,registroComision.getComision(),registroComision.getFecha());
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
 
         }
     }
@@ -99,6 +104,7 @@ public class AdminController extends HttpServlet {
         }
 
         if (uri.endsWith("/actualizar-comision")) {
+
 
             Comision comision = readJson(resp,req,conexion);
             actualizarComision(conexion,comision.getCantidad());
@@ -119,6 +125,12 @@ public class AdminController extends HttpServlet {
         AdminDB adminDB = new AdminDB(conexion);
         adminService = new AdminService(conexion);
         adminService.crearCategoria(codigo,nombre,descripcion);
+    }
+
+    public void registrarComision(Connection conexion, BigDecimal comision, String fecha){
+        AdminDB adminDB = new AdminDB(conexion);
+        adminService = new AdminService(conexion);
+        adminService.crearComision(comision, fecha);
     }
 
     public Categoria listarCategoriaCodigo(Connection conexion, int codigo){
@@ -152,6 +164,13 @@ public class AdminController extends HttpServlet {
         Comision comision = objectMapper.readValue(req.getInputStream(), Comision.class);
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
         return comision;
+    }
+
+    public RegistroComision readJsonRegistroComision(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        RegistroComision registroComision = objectMapper.readValue(req.getInputStream(), RegistroComision.class);
+        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+        return registroComision;
     }
 
     public Categoria readJsonCategoria(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {

@@ -1,4 +1,4 @@
-package com.ipc2.proyectofinalservlet.controller.EmployerController;
+package com.ipc2.proyectofinalservlet.controller.AdminController;
 
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.User.User;
@@ -22,36 +22,41 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-@WebServlet(name = "EmployerManagerReportsServlet", urlPatterns = {"/v1/employer-reports-servlet/*"})
-public class EmployerReports extends HttpServlet {
+@WebServlet(name = "AdminReportsServlet", urlPatterns = {"/v1/admin-reports-servlet/*"})
+public class AdminReports extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String resources = "/home/carlos117/Documentos/Ipc2/Proyecto Final IPC2 Angular y Sevlets/Proyecto-Final-Servlet/src/main/webapp/reportes/Employer/";
+        String resources = "/home/carlos117/Documentos/Ipc2/Proyecto Final IPC2 Angular y Sevlets/Proyecto-Final-Servlet/src/main/webapp/reportes/Admin/";
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
         User user = (User) session.getAttribute("user");
-
-
 
         String uri = req.getRequestURI();
         String reporte = "";
         Map<String, Object> params = new HashMap<>();
 
-        if (uri.endsWith("/ofertas-costos")) {
-            reporte = "OfertasFinalizadasCostos";
-            params = ofertasCostos(resp,user);
+        if (uri.endsWith("/historial-comision")) {
+            reporte = "HistorialComision";
+            resp.addHeader("Content-disposition", "attachment; filename=HistorialComision.pdf");
         }
 
-        if (uri.endsWith("/entrevista-fecha-especifica")) {
-            reporte = "EntrevistaFechaEspecifica";
-            params = entrevistaFechaEspecifica(resp,user,req);
+        if (uri.endsWith("/empleadores-mas-ofertas")) {
+            reporte = "Top5Empleadores";
+            resp.addHeader("Content-disposition", "attachment; filename=Top5Empleadores.pdf");
         }
 
-        if (uri.endsWith("/entrevista-fecha-estado")) {
-            reporte = "EntrevistasFechaEstado";
-            params = entrevistaFechaEstado(resp,user,req);
+        if (uri.endsWith("/empleadores-mas-ingresos")) {
+            reporte = "EmpleadoresMasIngresos";
+            params = empleadoFechaMasIngresos(resp,req);
+
         }
 
-        try (InputStream inputStream = new FileInputStream(resources + reporte +".jasper");){
+        if (uri.endsWith("/total-ingresos")) {
+            reporte = "TotalIngresos";
+            params = totalIngresos(resp,req);
+
+        }
+
+        try (InputStream inputStream = new FileInputStream(resources + reporte + ".jasper");) {
             resp.setContentType("application/pdf");
             JasperReport jasperReport = (JasperReport) JRLoader.loadObject(inputStream);
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new Conexion().obtenerConexion());
@@ -65,35 +70,24 @@ public class EmployerReports extends HttpServlet {
         }
     }
 
-    public Map<String, Object> ofertasCostos(HttpServletResponse resp, User user){
-        resp.addHeader("Content-disposition", "attachment; filename=ofertasFinalizadaCostos.pdf");
-        Map<String, Object> params = new HashMap<>();
-        params.put("user", user.getCodigo());
-        return params;
-    }
-
-    public Map<String, Object> entrevistaFechaEspecifica(HttpServletResponse resp, User user, HttpServletRequest req){
-        String fecha = req.getParameter("fecha");
-        String estado = req.getParameter("estado");
-        resp.addHeader("Content-disposition", "attachment; filename=EntrevistaFechaEspecifica.pdf");
-        Map<String, Object> params = new HashMap<>();
-        params.put("empresa", user.getCodigo());
-        params.put("fecha", fecha);
-        params.put("estado",estado);
-        return params;
-    }
-
-    public Map<String, Object> entrevistaFechaEstado(HttpServletResponse resp, User user, HttpServletRequest req){
+    public Map<String, Object> empleadoFechaMasIngresos(HttpServletResponse resp, HttpServletRequest req){
         String fechaA = req.getParameter("fechaA");
         String fechaB = req.getParameter("fechaB");
-        String estado = req.getParameter("estado");
-        resp.addHeader("Content-disposition", "attachment; filename=EntrevistasFechaEstado.pdf");
+        resp.addHeader("Content-disposition", "attachment; filename=EmpleadoresMasIngresos.pdf");
         Map<String, Object> params = new HashMap<>();
-        params.put("empresa", user.getCodigo());
-        params.put("estado",estado);
         params.put("fechaA", fechaA);
-        params.put("fechaB", fechaB);
+        params.put("fechaB",fechaB);
+        return params;
+    }
 
+    public Map<String, Object> totalIngresos(HttpServletResponse resp, HttpServletRequest req){
+        String fechaA = req.getParameter("fechaA");
+        String fechaB = req.getParameter("fechaB");
+        resp.addHeader("Content-disposition", "attachment; filename=TotalIngresos.pdf");
+        Map<String, Object> params = new HashMap<>();
+        params.put("fechaA", fechaA);
+        params.put("fechaB",fechaB);
         return params;
     }
 }
+

@@ -2,17 +2,14 @@ package com.ipc2.proyectofinalservlet.model.Applicant;
 
 import lombok.*;
 
-import java.sql.Date;
-
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntrevistaFecha {
+public class RegistroPostulacion {
     private int codigo;
-    private String Oferta;
+    private int usuario;
+    private String oferta;
     private String fecha;
-    private String Empresa;
-    private String estado;
 }

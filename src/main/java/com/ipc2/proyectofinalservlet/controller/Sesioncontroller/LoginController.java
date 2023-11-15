@@ -8,6 +8,7 @@ import com.ipc2.proyectofinalservlet.model.User.Rol;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.model.User.login;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
+import com.ipc2.proyectofinalservlet.service.SesionService;
 import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -25,7 +26,7 @@ import static java.sql.JDBCType.NULL;
 
 @WebServlet(name = "SesionManagerServlet", urlPatterns = {"/v1/sesion-servlet/*"})
 public class LoginController extends HttpServlet {
-    private  UserService usuarioService;
+    private SesionService usuarioService;
     private User usergeneral;
 
     @Override
@@ -116,7 +117,7 @@ public class LoginController extends HttpServlet {
 
     public boolean validarUsuario(Connection conexion,String username, String password, String email,HttpSession session) {
         System.out.println("validar : ");
-        usuarioService = new UserService(conexion);
+        usuarioService = new SesionService(conexion);
         var oUsuario = usuarioService.obtenerUsuario(username, password, email);
         if (oUsuario.isEmpty()) return false;
         usergeneral = oUsuario.get();
@@ -127,7 +128,7 @@ public class LoginController extends HttpServlet {
     public login readJson(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         login user = objectMapper.readValue(req.getInputStream(), login.class);
-        usuarioService = new UserService(conexion);
+        usuarioService = new SesionService(conexion);
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
         return user;
     }

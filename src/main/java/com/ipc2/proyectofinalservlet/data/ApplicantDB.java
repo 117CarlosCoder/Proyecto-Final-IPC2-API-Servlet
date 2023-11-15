@@ -1,13 +1,12 @@
 package com.ipc2.proyectofinalservlet.data;
 
-import com.ipc2.proyectofinalservlet.model.Applicant.OfertaCostos;
+import com.ipc2.proyectofinalservlet.model.Applicant.EntrevistaOferta;
+import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
+import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
-import com.ipc2.proyectofinalservlet.model.User.User;
 
-import javax.lang.model.type.NullType;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -179,6 +178,51 @@ public class ApplicantDB    {
         return solicitudes;
     }
 
+    public void registroPostulaciones(int usuarioN,String oferta, String fecha) {
+        String query = "INSERT INTO postulacionRetirada VALUES(?,?,?,?) ";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, Types.NULL);
+            preparedStatement.setInt(2, usuarioN);
+            preparedStatement.setString(3, oferta);
+            preparedStatement.setDate(4, Date.valueOf(fecha));
+            preparedStatement.executeUpdate();
+
+        }catch (SQLException e) {
+            System.out.println("Error al registrar postulaciones retiradas: " + e);
+        }
+    }
+
+    public List<RegistroPostulacion> listarRegistros(int usuarioN, String fechaA, String fechaB) {
+        String query = " SELECT * FROM postulacionRetirada WHERE usuario=? AND fecha BETWEEN ? AND ?";
+        List<RegistroPostulacion> registroPostulacions = new ArrayList<>();
+        RegistroPostulacion registroPostulacion = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, usuarioN);
+            preparedStatement.setString(2, fechaA);
+            preparedStatement.setString(3, fechaB);
+
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var usuario = resultSet.getInt("usuario");
+                    var oferta = resultSet.getString("oferta");
+                    var fecha = resultSet.getString("fecha");
+                    registroPostulacion = new RegistroPostulacion(codigo,usuario,oferta,fecha);
+                    registroPostulacions.add(registroPostulacion);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al registrar postulaciones retiradas: " + e);
+        }
+
+        return registroPostulacions;
+    }
+
     public void eliminarPostulacion(int codigo){
         try (var preparedStatement = conexion.prepareStatement("DELETE FROM solicitudes WHERE codigo = ?")) {
             preparedStatement.setInt(1, codigo);
@@ -245,4 +289,77 @@ public class ApplicantDB    {
 
         return ofertasCostos;
     }
+
+    public List<EntrevistaOferta> listarEntrevistasInfo(int usuarion) {
+        String query = "SELECT e.*, u.nombre, o.nombre AS 'nombreOferta' FROM entrevistas e INNER JOIN usuarios u ON e.usuario = u.codigo INNER JOIN ofertas o ON o.codigo = e.codigoOferta WHERE e.estado = 'PENDIENTE' AND u.codigo = ?";
+        List<EntrevistaOferta> entrevistas = new ArrayList<>();
+        EntrevistaOferta entrevista = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1,usuarion);
+
+            try (var resultset = preparedStatement.executeQuery()) {
+                while (resultset.next()) {
+                    var codigo = resultset.getInt("codigo");
+                    var usuario = resultset.getInt("usuario");
+                    var fecha = resultset.getDate("fecha");
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    String fechaFormateada = dateFormat.format(fecha);
+                    var hora = resultset.getTime("hora");
+                    var ubicacion = resultset.getString("ubicacion");
+                    var estado = resultset.getString("estado");
+                    var notas = resultset.getString("notas");
+                    var codigoOferta = resultset.getInt("codigoOferta");
+                    var nombreOferta = resultset.getString("nombreOferta");
+                    entrevista = new EntrevistaOferta(codigo, usuario, fechaFormateada, hora, ubicacion, estado, notas, codigoOferta, "", nombreOferta);
+                    entrevistas.add(entrevista);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar Ofertas Costos: " + e);
+        }
+
+        return entrevistas;
+    }
+
+    public List<OfertasEmpresaFecha> listarOfertasFecha(int usuario,String estadon, String fechaA, String fechaB) {
+        String query = "SELECT o.* FROM ofertas o INNER JOIN solicitudes s ON s.codigoOferta = o.codigo WHERE o.estado=? AND s.usuario=? AND fechaPublicacion BETWEEN ? AND ?";
+        List<OfertasEmpresaFecha> ofertas = new ArrayList<>();
+        OfertasEmpresaFecha oferta = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, estadon);
+            preparedStatement.setInt(2, usuario);
+            preparedStatement.setDate(3, Date.valueOf(fechaA));
+            preparedStatement.setDate(4, Date.valueOf(fechaB));
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var descripcion = resultSet.getString("descripcion");
+                    var empresa = resultSet.getString("empresa");
+                    var categoria = resultSet.getInt("categoria");
+                    var estado = resultSet.getString("estado");
+                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    String fechaFormateada = dateFormat.format(fechaPublicacion);
+                    var fechaLimite = resultSet.getDate("fechaLimite");
+                    var salario = resultSet.getBigDecimal("salario");
+                    var modalidad = resultSet.getString("salario");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var detalles = resultSet.getString("detalles");
+                    var usuarioElegido = resultSet.getInt("usuarioElegido");
+                    oferta = new OfertasEmpresaFecha(codigo,nombre,descripcion,empresa,categoria,estado,fechaFormateada,fechaLimite,salario,modalidad,ubicacion,detalles,usuarioElegido);
+                    ofertas.add(oferta);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar oferta de empresa: " + e);
+        }
+
+        return ofertas;
+    }
+
 }

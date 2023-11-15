@@ -1,16 +1,14 @@
 package com.ipc2.proyectofinalservlet.data;
 
-import com.ipc2.proyectofinalservlet.model.Applicant.EntrevistaFecha;
-import com.ipc2.proyectofinalservlet.model.Applicant.OfertaCostos;
+import com.ipc2.proyectofinalservlet.model.Employer.EntrevistaFecha;
+import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
-import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.math.BigDecimal;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Date;
 
@@ -19,73 +17,73 @@ import static java.sql.Types.NULL;
 public class EmployerDB {
     private final Connection conexion;
 
-    public EmployerDB(Connection conexion){
+    public EmployerDB(Connection conexion) {
         this.conexion = conexion;
     }
 
 
-    public void completarInformacion(String mision, String vision, int codigo){
+    public void completarInformacion(String mision, String vision, int codigo) {
         String query = "UPDATE usuarios SET mision = ?, vision = ? WHERE codigo = ?";
-        try(var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setString(1,mision);
-            preparedStatement.setString(2,vision);
-            preparedStatement.setInt(3,codigo);
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setString(1, mision);
+            preparedStatement.setString(2, vision);
+            preparedStatement.setInt(3, codigo);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad){
+    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad) {
         String query = "INSERT INTO tarjeta VALUES(?,?,?,?,?)";
-        try(var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1,codigo);
-            preparedStatement.setInt(2,codigoUsuario);
-            preparedStatement.setString(3,Titular);
-            preparedStatement.setInt(4,numero);
-            preparedStatement.setInt(5,codigoSeguridad);
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.setInt(2, codigoUsuario);
+            preparedStatement.setString(3, Titular);
+            preparedStatement.setInt(4, numero);
+            preparedStatement.setInt(5, codigoSeguridad);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void crearOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido){
+    public void crearOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido) {
         String query = "INSERT INTO ofertas VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-        try(var preparedStatement = conexion.prepareStatement(query)) {
+        try (var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1, NULL);
-            preparedStatement.setString(2,nombre);
-            preparedStatement.setString(3,descripcion);
-            preparedStatement.setInt(4,empresa);
-            preparedStatement.setInt(5,categoria);
-            preparedStatement.setString(6,estado);
+            preparedStatement.setString(2, nombre);
+            preparedStatement.setString(3, descripcion);
+            preparedStatement.setInt(4, empresa);
+            preparedStatement.setInt(5, categoria);
+            preparedStatement.setString(6, estado);
             preparedStatement.setDate(7, (java.sql.Date) fechaPublicacion);
             preparedStatement.setDate(8, (java.sql.Date) fechaLimite);
-            preparedStatement.setBigDecimal(9,salario);
-            preparedStatement.setString(10,modalidad);
-            preparedStatement.setString(11,ubicacion);
-            preparedStatement.setString(12,detalles);
-            preparedStatement.setInt(13,usuarioElegido);
+            preparedStatement.setBigDecimal(9, salario);
+            preparedStatement.setString(10, modalidad);
+            preparedStatement.setString(11, ubicacion);
+            preparedStatement.setString(12, detalles);
+            preparedStatement.setInt(13, usuarioElegido);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void actualizarOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido, int codigo){
+    public void actualizarOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido, int codigo) {
         String query = "UPDATE ofertas SET nombre = ?, descripcion = ? , categoria = ?, fechaLimite = ?, salario = ?, modalidad = ?, ubicacion = ?, detalles = ? WHERE codigo = ?";
 
-        try(var preparedStatement = conexion.prepareStatement(query)) {
+        try (var preparedStatement = conexion.prepareStatement(query)) {
 
-            preparedStatement.setString(1,nombre);
-            preparedStatement.setString(2,descripcion);
-            preparedStatement.setInt(3,categoria);
+            preparedStatement.setString(1, nombre);
+            preparedStatement.setString(2, descripcion);
+            preparedStatement.setInt(3, categoria);
             preparedStatement.setDate(4, (java.sql.Date) fechaLimite);
-            preparedStatement.setBigDecimal(5,salario);
-            preparedStatement.setString(6,modalidad);
-            preparedStatement.setString(7,ubicacion);
-            preparedStatement.setString(8,detalles);
+            preparedStatement.setBigDecimal(5, salario);
+            preparedStatement.setString(6, modalidad);
+            preparedStatement.setString(7, ubicacion);
+            preparedStatement.setString(8, detalles);
             preparedStatement.setInt(9, codigo);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -125,11 +123,11 @@ public class EmployerDB {
         return oferta;
     }
 
-    public void actualizarOfertaEstado(int codigo){
+    public void actualizarOfertaEstado(int codigo) {
         String query = "UPDATE ofertas SET estado = 'ENTREVISTA' WHERE codigo = ?";
 
-        try(var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1,codigo);
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, codigo);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -166,17 +164,17 @@ public class EmployerDB {
         return ofertas;
     }
 
-    public List<Categoria> listarCategorias(){
+    public List<Categoria> listarCategorias() {
         String query = "SELECT * FROM categoria";
         List<Categoria> categorias = new ArrayList<>();
         Categoria categoria = null;
-        try(var select = conexion.prepareStatement(query)) {
+        try (var select = conexion.prepareStatement(query)) {
             ResultSet resultset = select.executeQuery();
             while (resultset.next()) {
                 var codigo = resultset.getInt("codigo");
                 var nombre = resultset.getString("nombre");
                 var descripcion = resultset.getString("descripcion");
-                categoria = new Categoria(codigo,nombre,descripcion);
+                categoria = new Categoria(codigo, nombre, descripcion);
                 categorias.add(categoria);
             }
 
@@ -211,11 +209,11 @@ public class EmployerDB {
                     var ubicacion = resultSet.getString("ubicacion");
                     var detalles = resultSet.getString("detalles");
                     var usuarioElegido = resultSet.getInt("usuarioElegido");
-                    oferta = new Ofertas(codigo,nombre,descripcion,empresa,categoria,estado,fechaPublicacion,fechaLimite,salario,modalidad,ubicacion,detalles,usuarioElegido);
+                    oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
                     ofertas.add(oferta);
                 }
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println("Error al listar oferta de empresa: " + e);
         }
 
@@ -228,7 +226,7 @@ public class EmployerDB {
         Ofertas oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
-            preparedStatement.setInt(1,numEmpresa);
+            preparedStatement.setInt(1, numEmpresa);
 
             try (var resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
@@ -245,18 +243,20 @@ public class EmployerDB {
                     var ubicacion = resultSet.getString("ubicacion");
                     var detalles = resultSet.getString("detalles");
                     var usuarioElegido = resultSet.getInt("usuarioElegido");
-                    oferta = new Ofertas(codigo,nombre,descripcion,empresa,categoria,estado,fechaPublicacion,fechaLimite,salario,modalidad,ubicacion,detalles,usuarioElegido);
+                    oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
                     ofertas.add(oferta);
                 }
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println("Error al listar ofertasPostulantes: " + e);
         }
 
         return ofertas;
     }
 
-    public void eliminarOfertas(int codigo){
+
+
+    public void eliminarOfertas(int codigo) {
         try (var preparedStatement = conexion.prepareStatement("DELETE FROM ofertas WHERE codigo = ?")) {
             preparedStatement.setInt(1, codigo);
             preparedStatement.executeUpdate();
@@ -265,7 +265,7 @@ public class EmployerDB {
         }
     }
 
-    public void eliminarSolicitu(int codigo){
+    public void eliminarSolicitu(int codigo) {
         try (var preparedStatement = conexion.prepareStatement("DELETE FROM solicitudes WHERE codigoOferta = ?")) {
             preparedStatement.setInt(1, codigo);
             preparedStatement.executeUpdate();
@@ -280,7 +280,7 @@ public class EmployerDB {
         Solicitudes solicitud = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
-            preparedStatement.setInt(1,numOferta);
+            preparedStatement.setInt(1, numOferta);
 
             try (var resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
@@ -288,11 +288,11 @@ public class EmployerDB {
                     var codigoOferta = resultSet.getInt("codigoOferta");
                     var usuario = resultSet.getInt("usuario");
                     var mensaje = resultSet.getString("mensaje");
-                    solicitud = new Solicitudes(codigo,codigoOferta,usuario,mensaje);
+                    solicitud = new Solicitudes(codigo, codigoOferta, usuario, mensaje);
                     solicitudes.add(solicitud);
                 }
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println("Error al listar solicitudes: " + e);
         }
 
@@ -316,11 +316,11 @@ public class EmployerDB {
                     var estado = resultSet.getString("estado");
                     var nombre = resultSet.getString("nombre");
                     var nombreUsuario = resultSet.getString("nombreUsuario");
-                    solicitud = new EstadoSolicitudPostulante(codigo,codigoOferta,usuario,estado,nombre,nombreUsuario);
+                    solicitud = new EstadoSolicitudPostulante(codigo, codigoOferta, usuario, estado, nombre, nombreUsuario);
                     solicitudes.add(solicitud);
                 }
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println("Error al listar especialidades: " + e);
         }
 
@@ -344,17 +344,17 @@ public class EmployerDB {
                     var email = resultSet.getString("email");
                     var curriculum = resultSet.getString("curriculum");
                     var mensaje = resultSet.getString("mensaje");
-                    postulante = new Postulante(codigo,codigoOferta,nombre,email,curriculum,mensaje);
+                    postulante = new Postulante(codigo, codigoOferta, nombre, email, curriculum, mensaje);
                 }
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
         }
 
         return postulante;
     }
 
-    public void generarEntrevista(int codigo,int codigoOferta, int usuario, Date fecha, String hora, String ubicacion)  {
+    public void generarEntrevista(int codigo, int codigoOferta, int usuario, Date fecha, String hora, String ubicacion) {
         String query = "INSERT INTO entrevistas VALUES(?,?,?,?,?,?,?,?)";
         java.sql.Date fech = new java.sql.Date(NULL);
         Time tiempo = new Time(LocalDateTime.now().getHour());
@@ -385,15 +385,15 @@ public class EmployerDB {
         }
         Time time = new Time(fechah.getTime());
 
-        try(var preparedStatement = conexion.prepareStatement(query)) {
+        try (var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1, NULL);
             preparedStatement.setInt(2, codigoOferta);
             preparedStatement.setInt(3, usuario);
             preparedStatement.setDate(4, (java.sql.Date) fecha);
             preparedStatement.setTime(5, time);
-            preparedStatement.setString(6,ubicacion);
-            preparedStatement.setString(7,"PENDIENTE");
-            preparedStatement.setString(8,"");
+            preparedStatement.setString(6, ubicacion);
+            preparedStatement.setString(7, "PENDIENTE");
+            preparedStatement.setString(8, "");
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -417,7 +417,7 @@ public class EmployerDB {
                 var codigoOferta = resultset.getInt("codigoOferta");
                 var nombre = resultset.getString("nombre");
                 var nombreOferta = resultset.getString("nombreOferta");
-                entrevista = new EntrevistaInfo(codigo,usuario,fecha,hora,ubicacion,estado,notas, codigoOferta,nombre,nombreOferta);
+                entrevista = new EntrevistaInfo(codigo, usuario, fecha, hora, ubicacion, estado, notas, codigoOferta, nombre, nombreOferta);
                 entrevistas.add(entrevista);
             }
 
@@ -427,10 +427,10 @@ public class EmployerDB {
         return entrevistas;
     }
 
-    public void finalizarEntrevista(String notas, int usuario, int codigo){
+    public void finalizarEntrevista(String notas, int usuario, int codigo) {
         String query = "UPDATE entrevistas SET notas = ?, estado = ? WHERE usuario = ? AND codigo = ?";
 
-        try(var preparedStatement = conexion.prepareStatement(query)) {
+        try (var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setString(1, notas);
             preparedStatement.setString(2, "FINALIZADO");
             preparedStatement.setInt(3, usuario);
@@ -442,7 +442,7 @@ public class EmployerDB {
     }
 
     public List<OfertaCostos> listarOfertasCostos() {
-        String query = "SELECT e.codigo,o.nombre AS 'Oferta' ,u.nombre AS 'Empresa',e.estado,c.cantidad FROM comision c ,entrevistas e INNER JOIN ofertas o ON o.codigo =  e.codigoOferta INNER JOIN usuarios u ON u.codigo = o.empresa";
+        String query = "SELECT o.codigo,o.nombre AS 'Oferta' ,u.nombre AS 'Empresa',o.estado,c.cantidad FROM cobros c INNER JOIN ofertas o ON o.codigo = c.codigoOferta INNER JOIN usuarios u ON u.codigo = o.empresa WHERE o.estado = 'FINALIZADO'";
         List<OfertaCostos> ofertasCostos = new ArrayList<>();
         OfertaCostos ofertaCostos = null;
 
@@ -455,7 +455,7 @@ public class EmployerDB {
                 var empresa = resultSet.getString("Empresa");
                 var estado = resultSet.getString("estado");
                 var cantidad = resultSet.getInt("cantidad");
-                ofertaCostos = new OfertaCostos(codigo,oferta,empresa,estado,cantidad);
+                ofertaCostos = new OfertaCostos(codigo, oferta, empresa, estado, cantidad);
                 ofertasCostos.add(ofertaCostos);
             }
 
@@ -489,14 +489,59 @@ public class EmployerDB {
                     var oferta = resultSet.getString("Oferta");
                     var empresa = resultSet.getString("Empresa");
                     var estado = resultSet.getString("estado");
-                    entrevistaFecha = new EntrevistaFecha(codigo,oferta,fechaFormateada,empresa,estado);
+                    entrevistaFecha = new EntrevistaFecha(codigo, oferta, fechaFormateada, empresa, estado);
                     entrevistaFechas.add(entrevistaFecha);
                 }
             }
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println("Error al listar EntrevistaFechas: " + e);
         }
 
         return entrevistaFechas;
     }
+
+    public List<OfertasEmpresaFecha> listarOfertaFecha(String fechaAn, String fechaBn, String estadon, int empresan) {
+        String query = " SELECT e.codigo, e.nombre, e.descripcion,u.nombre AS 'empresa', e.categoria, e.estado, e.fechaPublicacion, e.fechaLimite, e.salario, e.modalidad, e.ubicacion, e.detalles,e.usuarioElegido FROM ofertas e INNER JOIN usuarios u ON e.empresa = u.codigo  WHERE e.empresa=? AND e.estado=? AND e.fechaPublicacion BETWEEN ? AND ?";
+        List<OfertasEmpresaFecha> ofertas = new ArrayList<>();
+        OfertasEmpresaFecha oferta = null;
+        System.out.println(fechaAn);
+        System.out.println(fechaBn);
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, empresan);
+            preparedStatement.setString(2,estadon);
+            preparedStatement.setDate(3, java.sql.Date.valueOf(fechaAn));
+            preparedStatement.setDate(4, java.sql.Date.valueOf(fechaBn));
+
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var descripcion = resultSet.getString("descripcion");
+                    var empresa = resultSet.getString("empresa");
+                    var categoria = resultSet.getInt("categoria");
+                    var estado = resultSet.getString("estado");
+                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
+                    var fechaLimite = resultSet.getDate("fechaLimite");
+                    var salario = resultSet.getBigDecimal("salario");
+                    var modalidad = resultSet.getString("salario");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var detalles = resultSet.getString("detalles");
+                    var usuarioElegido = resultSet.getInt("usuarioElegido");
+                    oferta = new OfertasEmpresaFecha(codigo, nombre, descripcion, empresa, categoria, estado, fechaAn, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
+                    ofertas.add(oferta);
+                    System.out.println(oferta);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al listar EntrevistaFechas: " + e);
+        }
+
+            return ofertas;
+        }
+
+
+
 }

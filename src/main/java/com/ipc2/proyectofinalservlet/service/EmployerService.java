@@ -1,13 +1,8 @@
 package com.ipc2.proyectofinalservlet.service;
 
 import com.ipc2.proyectofinalservlet.data.EmployerDB;
-import com.ipc2.proyectofinalservlet.model.Applicant.EntrevistaFecha;
-import com.ipc2.proyectofinalservlet.model.Applicant.Estado;
-import com.ipc2.proyectofinalservlet.model.Applicant.Estados;
-import com.ipc2.proyectofinalservlet.model.Applicant.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
-import com.ipc2.proyectofinalservlet.model.Employer.Modalidad;
-import com.ipc2.proyectofinalservlet.model.Employer.Modalidades;
+import com.ipc2.proyectofinalservlet.model.Employer.*;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -106,6 +101,11 @@ public class EmployerService {
         return employerDB.listarEntrevistaFecha(fecha,empresa, estado);
     }
 
+    public List<OfertasEmpresaFecha> listarFechaOferta(String fechaA, String fechaB, String estado,int empresa){
+        System.out.println("listar Ofertas fecha");
+        return employerDB.listarOfertaFecha(fechaA,fechaB, estado,empresa);
+    }
+
     public void finalizarEntrevista(String notas, int usuario , int codigo){
         System.out.println("finalizar entrevista");
         employerDB.finalizarEntrevista(notas,usuario,codigo);
@@ -131,5 +131,17 @@ public class EmployerService {
         estado = new Estado(Estados.FINALIZADO.toString());
         estados.add(estado);
         return estados;
+    }
+
+    public List<EstadoOferta> listarEstadosOferta(){
+        List<EstadoOferta> estadoOfertas= new ArrayList<>();
+        EstadoOferta estadoOferta= null;
+        estadoOferta = new EstadoOferta(EstadosOfertas.ACTIVA.toString());
+        estadoOfertas.add(estadoOferta);
+        estadoOferta = new EstadoOferta(EstadosOfertas.SELECCION.toString());
+        estadoOfertas.add(estadoOferta);
+        estadoOferta = new EstadoOferta(EstadosOfertas.ENTREVISTA.toString());
+        estadoOfertas.add(estadoOferta);
+        return estadoOfertas;
     }
 }

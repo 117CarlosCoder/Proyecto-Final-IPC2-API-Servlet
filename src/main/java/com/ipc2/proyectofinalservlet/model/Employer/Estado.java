@@ -1,4 +1,4 @@
-package com.ipc2.proyectofinalservlet.model.Applicant;
+package com.ipc2.proyectofinalservlet.model.Employer;
 
 import lombok.*;
 

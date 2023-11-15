@@ -2,6 +2,8 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.CompletarInformacionEmployerTarjeta;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.EstadoSolicitud;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
@@ -51,6 +53,24 @@ public class ApplicantNominationController extends HttpServlet {
     }
 
     @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+
+        Connection conexion = (Connection) session.getAttribute("conexion");
+
+        User user = (User) session.getAttribute("user");
+
+        String uri = req.getRequestURI();
+
+        if(uri.endsWith("/resgistrar-retirada-postulacion")) {
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            RegistroPostulacion registroPostulacion = objectMapper.readValue(req.getInputStream(), RegistroPostulacion.class);
+            registroRetiroPostulacion(conexion,user.getCodigo(),registroPostulacion.getOferta(), registroPostulacion.getFecha());
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+    }
+
+    @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
 
@@ -76,6 +96,11 @@ public class ApplicantNominationController extends HttpServlet {
     private Ofertas listarOfetaPostulacion(Connection conexion, int codigo){
         applicantService = new ApplicantService(conexion);
         return applicantService.listarOfetaCodigo(codigo);
+    }
+
+    private void registroRetiroPostulacion(Connection conexion, int usuario, String oferta, String fecha){
+        applicantService = new ApplicantService(conexion);
+        applicantService.registrarPostulacion(usuario,oferta,fecha);
     }
 
     private void eliminarPostulacione(Connection conexion, int codigo){
