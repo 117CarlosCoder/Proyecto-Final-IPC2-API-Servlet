@@ -48,6 +48,26 @@ public class EmployerDB {
         }
     }
 
+    public void actualizarOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido, int codigo) {
+        String query = "UPDATE ofertas SET nombre = ?, descripcion = ? , categoria = ?, fechaLimite = ?, salario = ?, modalidad = ?, ubicacion = ?, detalles = ? WHERE codigo = ?";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, nombre);
+            preparedStatement.setString(2, descripcion);
+            preparedStatement.setInt(3, categoria);
+            preparedStatement.setDate(4, (java.sql.Date) fechaLimite);
+            preparedStatement.setBigDecimal(5, salario);
+            preparedStatement.setString(6, modalidad);
+            preparedStatement.setString(7, ubicacion);
+            preparedStatement.setString(8, detalles);
+            preparedStatement.setInt(9, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void crearOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido) {
         String query = "INSERT INTO ofertas VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
@@ -65,26 +85,6 @@ public class EmployerDB {
             preparedStatement.setString(11, ubicacion);
             preparedStatement.setString(12, detalles);
             preparedStatement.setInt(13, usuarioElegido);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void actualizarOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido, int codigo) {
-        String query = "UPDATE ofertas SET nombre = ?, descripcion = ? , categoria = ?, fechaLimite = ?, salario = ?, modalidad = ?, ubicacion = ?, detalles = ? WHERE codigo = ?";
-
-        try (var preparedStatement = conexion.prepareStatement(query)) {
-
-            preparedStatement.setString(1, nombre);
-            preparedStatement.setString(2, descripcion);
-            preparedStatement.setInt(3, categoria);
-            preparedStatement.setDate(4, (java.sql.Date) fechaLimite);
-            preparedStatement.setBigDecimal(5, salario);
-            preparedStatement.setString(6, modalidad);
-            preparedStatement.setString(7, ubicacion);
-            preparedStatement.setString(8, detalles);
-            preparedStatement.setInt(9, codigo);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);

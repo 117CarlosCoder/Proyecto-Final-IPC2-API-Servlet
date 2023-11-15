@@ -20,8 +20,8 @@ public class Employer {
     private String email;
     private String CUI;
     private Date fechaFundacion;
-    private List<Tarjeta> tarjeta;
-    private List<Telefono> telefonos;
+    private Tarjeta tarjeta;
+    private String[] telefonos;
     private String mision;
     private String vision;
 }

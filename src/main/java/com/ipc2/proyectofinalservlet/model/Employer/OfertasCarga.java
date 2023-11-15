@@ -27,6 +27,6 @@ public class OfertasCarga {
     private String ubicacion;
     private String detalles;
     private List<Entrevista> entrevistas;
-    private List<Solicitudes> solicitude;
+    private List<Solicitudes> solicitudes;
     private int usuarioElegido;
 }

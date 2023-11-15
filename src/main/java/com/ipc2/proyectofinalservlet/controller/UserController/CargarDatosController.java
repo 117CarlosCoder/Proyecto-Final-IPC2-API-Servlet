@@ -9,12 +9,17 @@ import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.CargarDatosFinal;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.Scanner;
+
+@WebServlet(name = "CargaManagerControler", urlPatterns = {"/v1/carga-servlet/*"})
+@MultipartConfig
 
 public class CargarDatosController extends HttpServlet {
     @Override
@@ -26,7 +31,7 @@ public class CargarDatosController extends HttpServlet {
         session.setAttribute("valorconexion", conexion);
         Connection connection = (Connection) session.getAttribute("conexion");
 
-        Part filePart = req.getPart("archivo");
+        Part filePart = req.getPart("file");
         InputStream fileInputStream = filePart.getInputStream();
         Scanner scanner = new Scanner(fileInputStream, "UTF-8").useDelimiter("\\A");
         String fileContent = scanner.hasNext() ? scanner.next() : "";
@@ -63,13 +68,17 @@ public class CargarDatosController extends HttpServlet {
             try {
 
                 assert datos != null;
-
+                carga.crearCategorias(datos.getCategorias());
                 carga.crearAdmin(datos.getAdmin());
-                if (carga.errorEncontrado()){
+                carga.crearUsuariOEmpleador(datos.getEmpleadores());
+                carga.crearUsuarioSolicitante(datos.getUsuarios());
+                carga.crearOferta(datos.getOfertas());
+
+                /*if (carga.errorEncontrado()){
                     RequestDispatcher dispatcher = req.getRequestDispatcher("/index.jsp");
                     dispatcher.forward(req, resp);
                     return;
-                }
+                }*/
             } catch (Exception e) {
                 System.out.println("Error al cargar datos: " + e.getMessage());
                 System.out.println("error");
