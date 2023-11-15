@@ -1,6 +1,7 @@
 package com.ipc2.proyectofinalservlet.data;
 
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
+import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.sql.Connection;
@@ -33,6 +34,48 @@ public class UserDB {
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
         }
+    }
+
+    public void crearTelefonos(int usuario, Telefono telefonos) {
+        System.out.println("creando telefonos");
+        String query = "INSERT INTO telefonos VALUES(NULL,?,?)";
+
+
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+
+                preparedStatement.setInt(1, usuario);
+                preparedStatement.setString(2, telefonos.getTelefono1());
+
+                preparedStatement.executeUpdate();
+            }catch (SQLException e) {
+                System.out.println("Error al consultar: " + e);
+            }
+            if (telefonos.getTelefono2()!=null || !telefonos.getTelefono2().equals("")){
+                try (var preparedStatement = conexion.prepareStatement(query)) {
+
+                    preparedStatement.setInt(1, usuario);
+                    preparedStatement.setString(2, telefonos.getTelefono2());
+
+                    preparedStatement.executeUpdate();
+                }catch (SQLException e) {
+                    System.out.println("Error al consultar: " + e);
+                }
+            }
+        if (telefonos.getTelefono3()!=null || !telefonos.getTelefono3().equals("")){
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+
+                preparedStatement.setInt(1, usuario);
+                preparedStatement.setString(2, telefonos.getTelefono3());
+
+                preparedStatement.executeUpdate();
+            }catch (SQLException e) {
+                System.out.println("Error al consultar: " + e);
+            }
+        }
+
+
+
+
     }
 
     public void crearUsuariOEmpleador(User user, String contrasena) {

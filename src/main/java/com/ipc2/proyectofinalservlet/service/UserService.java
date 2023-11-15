@@ -2,6 +2,7 @@ package com.ipc2.proyectofinalservlet.service;
 
 import com.ipc2.proyectofinalservlet.data.SesionDB;
 import com.ipc2.proyectofinalservlet.data.UserDB;
+import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
 import javax.mail.Message;
@@ -31,6 +32,10 @@ public class UserService  {
         String contreseña = generarContraseña(8);
         usuarioDB.crearUsuarioSolicitante(user,contreseña);
         enviarConGMail(user.getEmail(),"EmpleoGt","Hola Bienvenido a EmpleoGT esta es su contraseña : " + contreseña);
+    }
+
+    public void crearTelefono(int usuario, Telefono telefono) {
+        usuarioDB.crearTelefonos(usuario, telefono);
     }
 
     public void crearUsuarioEmpleador(User user) {
