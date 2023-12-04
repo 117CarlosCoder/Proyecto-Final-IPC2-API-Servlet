@@ -9,4 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class Rol {
     private String rol;
+    private String idSession;
 }

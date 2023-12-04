@@ -46,7 +46,7 @@ public class CargaDB {
     }
     public void crearAdmin(Admin admin) {
         System.out.println("creando usuario administrador");
-        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,NULL,NULL,NULL,NULL)";
+        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'Administrador',NULL,NULL)";
 
 
             try (var preparedStatement = conexion.prepareStatement(query)) {

@@ -37,6 +37,7 @@ public class LoginController extends HttpServlet {
         Connection conexion = (Connection) session.getAttribute("conexion");
         String uri = req.getRequestURI();
 
+
         if (uri.endsWith("/cerrar-sesion")) {
             System.out.println("Cerrar Sesion");
             conectar.desconectar(conexion);
@@ -51,7 +52,8 @@ public class LoginController extends HttpServlet {
         HttpSession session = req.getSession();
         System.out.println("sesion: "+ session);
         session.setMaxInactiveInterval(3600);
-        getServletContext().setAttribute("userSession", session);
+        String  sessionid = session.getId();
+        //getServletContext().setAttribute("userSession", session);
 
         System.out.println("Sesion Abierta : " + session);
         session.setAttribute("conexion", conexion);
@@ -68,7 +70,7 @@ public class LoginController extends HttpServlet {
                     resp.setStatus(HttpServletResponse.SC_ACCEPTED);
                     System.out.println(1);
                     System.out.println("valido :");
-                    Rol rol = new Rol(usergeneral.getRol());
+                    Rol rol = new Rol(usergeneral.getRol(),sessionid);
                     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
                     objectMapper.writeValue(resp.getWriter(), rol);
                     resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
@@ -82,7 +84,7 @@ public class LoginController extends HttpServlet {
                     resp.setStatus(HttpServletResponse.SC_ACCEPTED);
                     System.out.println(2);
                     System.out.println("valido :");
-                    Rol rol = new Rol(usergeneral.getRol());
+                    Rol rol = new Rol(usergeneral.getRol(), sessionid);
                     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
                     objectMapper.writeValue(resp.getWriter(), rol);
                     resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
@@ -92,7 +94,7 @@ public class LoginController extends HttpServlet {
 
                 } else {
                     System.out.println(3);
-                    Rol rol = new Rol(usergeneral.getRol());
+                    Rol rol = new Rol(usergeneral.getRol(), sessionid);
                     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
                     objectMapper.writeValue(resp.getWriter(), rol);
                     resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());

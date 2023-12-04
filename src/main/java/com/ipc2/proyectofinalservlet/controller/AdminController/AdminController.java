@@ -9,6 +9,7 @@ import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 import com.ipc2.proyectofinalservlet.model.User.User;
+import com.ipc2.proyectofinalservlet.model.User.login;
 import com.ipc2.proyectofinalservlet.service.AdminService;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
 import jakarta.servlet.ServletException;
@@ -31,7 +32,11 @@ public class AdminController extends HttpServlet {
     private AdminService adminService;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        //login user = readJson(resp,req,conexion);
+        String angularSessionId = req.getHeader("X-Angular-Session-Id");
+        System.out.println("Sesion desde angular cookie:" + angularSessionId);
+        HttpSession session = req.getSession(false);
+        System.out.println("Sesion servlet : " + session.getId());
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
@@ -53,6 +58,9 @@ public class AdminController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
         }
         if (uri.endsWith("/listar-dashboard")) {
+            String angularSessionId2 = req.getHeader("X-Angular-Session-Id");
+            System.out.println("Sesion :" + angularSessionId2);
+            System.out.println("Sesion servlet : " + session.getId());
             Dashboard dashboard = listarDashboard(conexion);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
@@ -92,7 +100,8 @@ public class AdminController extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        HttpSession session = req.getSession(false);
+        System.out.println("Sesion servlet : " + session.getId());
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
