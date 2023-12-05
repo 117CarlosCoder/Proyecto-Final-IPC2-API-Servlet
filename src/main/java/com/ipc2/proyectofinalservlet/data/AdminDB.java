@@ -1,6 +1,7 @@
 package com.ipc2.proyectofinalservlet.data;
 
 import com.ipc2.proyectofinalservlet.model.Admin.*;
+import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 
@@ -240,6 +241,36 @@ public class AdminDB {
         }
 
         return dashboard;
+    }
+
+    public List<Usuarios> listarUsuarios(String rol){
+        String query = "SELECT * FROM usuarios WHERE rol = ?";
+        List<Usuarios> usuarios = new ArrayList<>();
+        Usuarios usuario = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, rol);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var direccion = resultSet.getString("direccion");
+                    var username = resultSet.getString("username");
+                    var password = resultSet.getString("password");
+                    var email = resultSet.getString("email");
+                    var CUI = resultSet.getString("CUI");
+                    var fechaNacimiento = resultSet.getDate("fechaNacimiento");
+                    var curriculum = resultSet.getString("curriculum");
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,email,CUI, fechaNacimiento, curriculum,null);
+                    usuarios.add(usuario);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuarios: " + e);
+        }
+        return usuarios;
     }
 
 }

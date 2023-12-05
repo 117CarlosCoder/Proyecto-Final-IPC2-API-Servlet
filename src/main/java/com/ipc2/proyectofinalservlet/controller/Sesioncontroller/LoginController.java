@@ -2,6 +2,7 @@ package com.ipc2.proyectofinalservlet.controller.Sesioncontroller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.CompletarInformacionApplicant;
 import com.ipc2.proyectofinalservlet.model.User.Rol;
@@ -12,10 +13,7 @@ import com.ipc2.proyectofinalservlet.service.SesionService;
 import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.entity.ContentType;
 import java.io.IOException;
@@ -35,12 +33,16 @@ public class LoginController extends HttpServlet {
         System.out.println("sesion: "+ session);
         Conexion conectar = new Conexion();
         Connection conexion = (Connection) session.getAttribute("conexion");
+        String angularSessionId = req.getHeader("X-Angular-Session-Id");
+        System.out.println("Sesion desde angular cookie:" + angularSessionId);
         String uri = req.getRequestURI();
+
 
 
         if (uri.endsWith("/cerrar-sesion")) {
             System.out.println("Cerrar Sesion");
             conectar.desconectar(conexion);
+            session.invalidate();
             resp.setStatus(HttpServletResponse.SC_OK);
         }
     }
@@ -49,13 +51,13 @@ public class LoginController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
-        HttpSession session = req.getSession();
-        System.out.println("sesion: "+ session);
+        HttpSession session = req.getSession(true);
+        System.out.println("sesion: "+ session.getId());
         session.setMaxInactiveInterval(3600);
         String  sessionid = session.getId();
-        //getServletContext().setAttribute("userSession", session);
+        getServletContext().setAttribute("userSession", session);
 
-        System.out.println("Sesion Abierta : " + session);
+        System.out.println("Sesion Abierta : " + session.getId());
         session.setAttribute("conexion", conexion);
 
         login user = readJson(resp,req,conexion);

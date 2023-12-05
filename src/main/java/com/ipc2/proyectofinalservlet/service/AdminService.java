@@ -2,6 +2,7 @@ package com.ipc2.proyectofinalservlet.service;
 
 import com.ipc2.proyectofinalservlet.data.AdminDB;
 import com.ipc2.proyectofinalservlet.model.Admin.*;
+import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.EntrevitaN;
@@ -68,6 +69,11 @@ public class AdminService {
     public List<IngresoTotal> ingresoTotalFecha( String fechaA, String fechaB){
         System.out.println("Top Ingresos");
         return adminDB.ingresoTotalFecha(fechaA, fechaB);
+    }
+
+    public List<Usuarios> listarUsuario(String rol){
+        System.out.println("listar usuarios");
+        return adminDB.listarUsuarios(rol);
     }
 
     public void actualizarComision(int cantidad){
