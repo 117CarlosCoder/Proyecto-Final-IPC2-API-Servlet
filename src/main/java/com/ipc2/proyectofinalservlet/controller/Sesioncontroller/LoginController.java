@@ -30,6 +30,7 @@ public class LoginController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        //HttpSession session = (HttpSession) req.getAttribute("userSession");
         System.out.println("sesion: "+ session);
         Conexion conectar = new Conexion();
         Connection conexion = (Connection) session.getAttribute("conexion");
@@ -52,10 +53,11 @@ public class LoginController extends HttpServlet {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
         HttpSession session = req.getSession(true);
+        req.getSession().setMaxInactiveInterval(30 * 60);
         System.out.println("sesion: "+ session.getId());
-        session.setMaxInactiveInterval(3600);
         String  sessionid = session.getId();
         getServletContext().setAttribute("userSession", session);
+        //session.setAttribute("userSession", session);
 
         System.out.println("Sesion Abierta : " + session.getId());
         session.setAttribute("conexion", conexion);

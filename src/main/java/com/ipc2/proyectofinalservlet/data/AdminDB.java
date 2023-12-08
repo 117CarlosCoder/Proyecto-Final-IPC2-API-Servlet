@@ -4,12 +4,17 @@ import com.ipc2.proyectofinalservlet.model.Admin.*;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.OfertasEmpresaFecha;
+import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
+import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
+import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class AdminDB {
 
@@ -36,6 +41,19 @@ public class AdminDB {
             preparedStatement.setBigDecimal(2,comision);
             preparedStatement.setDate(3, Date.valueOf(fecha));
             preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void crearTelefonos( NumTelefono telefonos){
+        System.out.println(telefonos);
+        String query = "INSERT INTO telefonos VALUES(NULL,?,?)";
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, telefonos.getCodigoUsuario());
+                preparedStatement.setInt(2, telefonos.getNumero());
+                preparedStatement.executeUpdate();
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -201,6 +219,45 @@ public class AdminDB {
         }
     }
 
+    public void actualizarUsuario(User usuario){
+        String query = "UPDATE usuarios SET CUI=?,curriculum=?,direccion=?,email=?,fechaFundacion=?,fechaNacimiento=?,mision=?,nombre=?,password=?,username=?,vision=? where codigo=?";
+
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setString(1,usuario.getCUI());
+            preparedStatement.setString(2,usuario.getCurriculum());
+            preparedStatement.setString(3,usuario.getDireccion());
+            preparedStatement.setString(4,usuario.getEmail());
+            preparedStatement.setDate(5,usuario.getFechaFundacion());
+            preparedStatement.setDate(6,usuario.getFechaNacimiento());
+            preparedStatement.setString(7,usuario.getMision());
+            preparedStatement.setString(8,usuario.getNombre());
+            preparedStatement.setString(9,usuario.getPassword());
+            preparedStatement.setString(10,usuario.getUsername());
+            preparedStatement.setString(11,usuario.getVision());
+            preparedStatement.setInt(12,usuario.getCodigo());
+
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void actualizarTelefonos(NumTelefono telefono){
+        String query = "UPDATE telefonos SET numero = ? WHERE codigo = ?";
+
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1,telefono.getNumero());
+            preparedStatement.setInt(2, telefono.getCodigo());
+
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println("Error al actualizar telefono : " + e);
+        }
+
+    }
+
     public Categoria listarCategoriasCodigo(int codigoN) {
         String query = "SELECT * FROM categoria WHERE codigo = ?";
         Categoria categoria = null;
@@ -262,8 +319,9 @@ public class AdminDB {
                     var email = resultSet.getString("email");
                     var CUI = resultSet.getString("CUI");
                     var fechaNacimiento = resultSet.getDate("fechaNacimiento");
+                    var fechaFundacion = resultSet.getDate("fechaFundacion");
                     var curriculum = resultSet.getString("curriculum");
-                    usuario = new Usuarios(codigo,nombre,direccion,username,password,email,CUI, fechaNacimiento, curriculum,null);
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,email,CUI, fechaNacimiento,fechaFundacion, curriculum,null);
                     usuarios.add(usuario);
                 }
             }
@@ -272,5 +330,133 @@ public class AdminDB {
         }
         return usuarios;
     }
+
+    public Usuarios listarUsuario(int codigon){
+        String query = "SELECT * FROM usuarios WHERE codigo = ?";
+
+        Usuarios usuario = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, codigon);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var direccion = resultSet.getString("direccion");
+                    var username = resultSet.getString("username");
+                    var password = resultSet.getString("password");
+                    var email = resultSet.getString("email");
+                    var CUI = resultSet.getString("CUI");
+                    var fechaNacimiento = resultSet.getDate("fechaNacimiento");
+                    var fechaFundacion= resultSet.getDate("fechaFundacion");
+                    var curriculum = resultSet.getString("curriculum");
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,email,CUI, fechaNacimiento,fechaFundacion, curriculum,null);
+
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuarios: " + e);
+        }
+        return usuario;
+    }
+
+    public void eliminarCategoria(int codigo ){
+        eliminarCategoriaUsuario(codigo);
+        List<Ofertas> ofertas = listarOFerta(codigo);
+        for (Ofertas oferta:ofertas) {
+            eliminarCategoriaOfertaSolicitudes(oferta.getCodigo());
+        }
+        eliminarCategoriaOferta(codigo);
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoria WHERE codigo = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarCategoriaUsuario(int codigo ){
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoriaUsuario WHERE codigoCategoria = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarCategoriaOferta(int codigo ){
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM ofertas WHERE categoria = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarCategoriaOfertaSolicitudes(int codigo ){
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM solicitudes WHERE codigoOferta = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+    public List<Ofertas> listarOFerta(int codigon){
+        String query = "SELECT * FROM ofertas WHERE categoria = ?";
+        List<Ofertas> ofertas = new ArrayList<>();
+        Ofertas oferta = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, codigon);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var descripcion = resultSet.getString("descripcion");
+                    var empresa = resultSet.getInt("empresa");
+                    var categoria = resultSet.getInt("categoria");
+                    var estado = resultSet.getString("estado");
+                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
+                    var fechaLimite = resultSet.getDate("fechaLimite");
+                    var salario = resultSet.getBigDecimal("salario");
+                    var modalidad = resultSet.getString("modalidad");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var detalles = resultSet.getString("detalles");
+                    var usuarioElegido = resultSet.getInt("usuarioElegido");
+                    oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
+                    ofertas.add(oferta);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuarios: " + e);
+        }
+        return ofertas;
+    }
+    public List<NumTelefono> listarTelefonos(int codigon){
+        String query = "SELECT * FROM telefonos WHERE codigoUsuario = ?";
+        List<NumTelefono> telefonos = new ArrayList<>();
+        NumTelefono telefono = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, codigon);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var codigoUsuario = resultSet.getInt("codigoUsuario");
+                    var numero = resultSet.getInt("numero");
+                    telefono = new NumTelefono(codigo,codigoUsuario,numero);
+                    telefonos.add(telefono);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuarios: " + e);
+        }
+        return telefonos;
+    }
+
 
 }

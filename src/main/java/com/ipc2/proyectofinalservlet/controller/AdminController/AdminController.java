@@ -1,7 +1,11 @@
 package com.ipc2.proyectofinalservlet.controller.AdminController;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.ipc2.proyectofinalservlet.data.AdminDB;
 import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.model.Admin.Dashboard;
@@ -9,16 +13,22 @@ import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
+import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
+import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
+import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.model.User.login;
 import com.ipc2.proyectofinalservlet.service.AdminService;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.List;
@@ -28,8 +38,12 @@ public class AdminController extends HttpServlet {
 
     private CargarDatosService cargarDatosService;
     private AdminService adminService;
+
+    private UserService userService;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+
 
         String angularSessionId = req.getHeader("X-Angular-Session-Id");
         System.out.println("Sesion desde angular cookie:" + angularSessionId);
@@ -48,15 +62,11 @@ public class AdminController extends HttpServlet {
             }
         }*/
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-
-
-
-        System.out.println("Sesion servlet : " + session.getId());
+        //HttpSession session =  req.getSession(false);
+        System.out.println("sesion get : " + session);
         Connection conexion = (Connection) session.getAttribute("conexion");
-        //login user = readJson(resp,req,conexion);
 
         String uri = req.getRequestURI();
-        User user = (User) session.getAttribute("user");
 
         if (uri.endsWith("/cargar-categorias")) {
             List<Categoria> categorias = listarCategorias(conexion);
@@ -74,7 +84,6 @@ public class AdminController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
         }
         if (uri.endsWith("/listar-dashboard")) {
-            String angularSessionId2 = req.getHeader("X-Angular-Session-Id");
             Dashboard dashboard = listarDashboard(conexion);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
@@ -98,11 +107,32 @@ public class AdminController extends HttpServlet {
             objectMapper.writeValue(resp.getWriter(), usuarios);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
+
+        if (uri.endsWith("/listar-usuario")) {
+            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            Usuarios usuario = listarUsuario(conexion,codigo);
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), usuario);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
+        if (uri.endsWith("/listar-telefonos")) {
+            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            List<NumTelefono> telefonos = listarTelefonos(conexion,codigo);
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), telefonos);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
+
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        //HttpSession session = req.getSession(false);
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
@@ -114,9 +144,25 @@ public class AdminController extends HttpServlet {
         }
         if (uri.endsWith("/crear-registro-comision")) {
 
-            RegistroComision registroComision = readJsonRegistroComision(resp,req,conexion);
+            RegistroComision registroComision = readJsonRegistroComision(resp,req);
             registrarComision(conexion,registroComision.getComision(),registroComision.getFecha());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
+        }
+
+        if (uri.endsWith("/crear-usuarios")) {
+
+            User usuario = readJsonUsuario(resp,req);
+            session.setAttribute("usuario",usuario);
+            crearUsuario(conexion,usuario);
+            resp.setStatus(HttpServletResponse.SC_CREATED);
+
+        }
+
+        if (uri.endsWith("/crear-telefonos")) {
+
+            List<NumTelefono> telefono = readJsonTelefonos(resp,req);
+            crearTelefonos(conexion,telefono);
 
         }
     }
@@ -124,7 +170,7 @@ public class AdminController extends HttpServlet {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        //System.out.println("Sesion servlet : " + session.getId());
+        //HttpSession session = (HttpSession) req.getAttribute("userSession");
         Connection conexion = (Connection) session.getAttribute("conexion");
 
         String uri = req.getRequestURI();
@@ -137,9 +183,28 @@ public class AdminController extends HttpServlet {
 
         if (uri.endsWith("/actualizar-comision")) {
 
-
             Comision comision = readJson(resp,req,conexion);
             actualizarComision(conexion,comision.getCantidad());
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
+
+        }
+
+        if (uri.endsWith("/actualizar-usuario")) {
+
+            User usuario = readJsonUsuario(resp,req);
+            session.setAttribute("usuario",usuario);
+            System.out.println("usuario act: "+ usuario);
+            actualizarUsuario(conexion,usuario);
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
+        }
+
+        if (uri.endsWith("/actualizar-telefonos")) {
+
+            List<NumTelefono> telefonos = readJsonTelefonos(resp,req);
+            actualizarTelefono(conexion,telefonos);
+            System.out.println("usuario act: "+ telefonos);
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
 
         }
@@ -147,20 +212,73 @@ public class AdminController extends HttpServlet {
 
     }
 
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //HttpSession session = (HttpSession) req.getAttribute("userSession");
+        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        System.out.println("sesion delete : " + session);
+        Connection conexion = (Connection) session.getAttribute("conexion");
+        String uri = req.getRequestURI();
+
+        if (uri.endsWith("/eliminar-usuario")) {
+            String username = req.getParameter("username");
+            eliminarUsuario(conexion, username);
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
+        }
+
+        if (uri.endsWith("/eliminar-categoria")) {
+            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            eliminarCategoria(conexion, codigo);
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
+        }
+
+    }
+
     public void actualizarComision(Connection conexion, int cantidad){
-        CargaDB cargaDB = new CargaDB(conexion);
         cargarDatosService = new CargarDatosService(conexion);
         cargarDatosService.actualizarComision(cantidad);
     }
 
     public void crearCategoria(Connection conexion,int codigo, String nombre, String descripcion){
-        AdminDB adminDB = new AdminDB(conexion);
         adminService = new AdminService(conexion);
         adminService.crearCategoria(codigo,nombre,descripcion);
     }
 
+    public void crearTelefonos(Connection conexion,List<NumTelefono> numTelefonos){
+        adminService = new AdminService(conexion);
+        System.out.println(numTelefonos);
+        if (numTelefonos.size() > 0) {
+            adminService.crearTelefonos(numTelefonos.get(0));
+
+            if (numTelefonos.size() > 1) {
+                if ((numTelefonos.get(1)) != null) {
+                    adminService.crearTelefonos(numTelefonos.get(1));
+                }
+                if (numTelefonos.size() > 2) {
+                    if ((numTelefonos.get(2)) != null) {
+                        adminService.crearTelefonos(numTelefonos.get(2));
+                    }
+                }
+            }
+        }
+
+    }
+
+    private void crearUsuario(Connection conexion, User user){
+        userService = new UserService(conexion);
+        if (user.getRol().equals("Empleador")){
+            userService.crearUsuarioEmpleador(user,true);
+        }
+        if (user.getRol().equals("Solicitante")){
+            userService.crearUsuarioSolicitante(user,true);
+        }
+
+    }
+
     public void registrarComision(Connection conexion, BigDecimal comision, String fecha){
-        AdminDB adminDB = new AdminDB(conexion);
         adminService = new AdminService(conexion);
         adminService.crearComision(comision, fecha);
     }
@@ -185,15 +303,54 @@ public class AdminController extends HttpServlet {
         return adminService.listarUsuario(rol);
     }
 
+    public Usuarios listarUsuario(Connection conexion, int codigo){
+        adminService = new AdminService(conexion);
+        return adminService.listarUsuarioE(codigo);
+    }
+
+    public List<NumTelefono> listarTelefonos(Connection conexion, int codigo){
+        adminService = new AdminService(conexion);
+        return adminService.listarTelefonos(codigo);
+    }
+
     public Comision listarComision(Connection conexion){
         adminService = new AdminService(conexion);
         return adminService.listarComision();
     }
 
     public void actualizarCategoria(Connection conexion,int codigo, String nombre, String descripcion){
-        AdminDB adminDB = new AdminDB(conexion);
         adminService = new AdminService(conexion);
         adminService.actualizarCategoria(codigo,nombre,descripcion);
+    }
+
+    public  void actualizarTelefono(Connection conexion, List<NumTelefono> telefono  ){
+        adminService = new AdminService(conexion);
+        adminService.actualizarTelefono(telefono.get(0));
+        if (telefono.size() > 1) {
+            if ((telefono.get(1)) != null) {
+                adminService.actualizarTelefono(telefono.get(1));
+            }
+            if (telefono.size() > 2) {
+                if ((telefono.get(2)) != null) {
+                    adminService.actualizarTelefono(telefono.get(2));
+                }
+            }
+        }
+    }
+    private void actualizarUsuario(Connection conexion, User usuario) {
+        adminService = new AdminService(conexion);
+        adminService.actualizarUsuario(usuario);
+    }
+
+
+    public void eliminarUsuario(Connection conexion,String username){
+        userService = new UserService(conexion);
+        userService.eliminarUsuario(username);
+    }
+
+    public void eliminarCategoria(Connection conexion,int codigo){
+        adminService = new AdminService(conexion);
+        adminService.eliminarCategoria(codigo);
     }
 
     public Comision readJson(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
@@ -203,11 +360,35 @@ public class AdminController extends HttpServlet {
         return comision;
     }
 
-    public RegistroComision readJsonRegistroComision(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
+    public RegistroComision readJsonRegistroComision(HttpServletResponse resp, HttpServletRequest req ) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         RegistroComision registroComision = objectMapper.readValue(req.getInputStream(), RegistroComision.class);
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
         return registroComision;
+    }
+
+
+    private List<NumTelefono> readJsonTelefonos(HttpServletResponse resp, HttpServletRequest req) throws IOException {
+        Gson gson = new Gson();
+
+        try (Reader reader = req.getReader()) {
+            // Lee la entrada del flujo de datos de la solicitud HTTP
+            List<NumTelefono> numTelefonos = gson.fromJson(reader, new TypeToken<List<NumTelefono>>() {}.getType());
+
+            // Configura el Content-Type de la respuesta (revisar si esto es necesario aquí)
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+
+            return numTelefonos;
+        } catch (IOException e) {
+            // Maneja la excepción o relanza una nueva excepción más específica si es necesario
+            throw new IOException("Error al procesar la solicitud JSON", e);
+        }
+    }
+    private User readJsonUsuario(HttpServletResponse resp, HttpServletRequest req) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        User user = objectMapper.readValue(req.getInputStream(), User.class);
+        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+        return user;
     }
 
     public Categoria readJsonCategoria(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {

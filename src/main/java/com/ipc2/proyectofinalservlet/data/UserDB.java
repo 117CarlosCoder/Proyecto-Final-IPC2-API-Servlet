@@ -1,11 +1,13 @@
 package com.ipc2.proyectofinalservlet.data;
 
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
+import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserDB {
@@ -36,42 +38,79 @@ public class UserDB {
         }
     }
 
-    public void crearTelefonos(int usuario, Telefono telefonos) {
+    public void crearUsuarioSolicitanteAdmin(User user ) {
+        System.out.println("creando usuario");
+        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL)";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, user.getNombre());
+            preparedStatement.setString(2, user.getDireccion());
+            preparedStatement.setString(3, user.getUsername());
+            preparedStatement.setString(4, user.getPassword());
+            preparedStatement.setString(5, user.getEmail());
+            preparedStatement.setString(6, user.getCUI());
+            preparedStatement.setDate(7, user.getFechaNacimiento());
+            preparedStatement.setString(8, user.getRol());
+
+            preparedStatement.executeUpdate();
+        }catch (SQLException e) {
+            System.out.println("Error al consultar: " + e);
+        }
+    }
+
+    public int listarCodigo(String username){
+        String query = "SELECT u.codigo FROM usuarios u WHERE username = ?";
+        int codigo = 0;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, username);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                     codigo = resultSet.getInt("codigo");
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuario: " + e);
+        }
+        return codigo;
+    }
+
+    public void eliminarUsuario(String username){
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM usuarios WHERE username = ?")) {
+            preparedStatement.setString(1, username);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarTelefonos(String username){
+
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM telefonos WHERE codigoUsuario = ?")) {
+            preparedStatement.setInt(1, listarCodigo(username));
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void crearTelefonos(String telefono, User user) {
         System.out.println("creando telefonos");
         String query = "INSERT INTO telefonos VALUES(NULL,?,?)";
 
 
             try (var preparedStatement = conexion.prepareStatement(query)) {
 
-                preparedStatement.setInt(1, usuario);
-                preparedStatement.setString(2, telefonos.getTelefono1());
-
+                preparedStatement.setInt(1, listarCodigo(user.getUsername()));
+                preparedStatement.setString(2, telefono);
                 preparedStatement.executeUpdate();
             }catch (SQLException e) {
-                System.out.println("Error al consultar: " + e);
+                System.out.println("Error al crear telefono : " + e);
             }
-            if (telefonos.getTelefono2()!=null || !telefonos.getTelefono2().equals("")){
-                try (var preparedStatement = conexion.prepareStatement(query)) {
 
-                    preparedStatement.setInt(1, usuario);
-                    preparedStatement.setString(2, telefonos.getTelefono2());
-
-                    preparedStatement.executeUpdate();
-                }catch (SQLException e) {
-                    System.out.println("Error al consultar: " + e);
-                }
-            }
-        if (telefonos.getTelefono3()!=null || !telefonos.getTelefono3().equals("")){
-            try (var preparedStatement = conexion.prepareStatement(query)) {
-
-                preparedStatement.setInt(1, usuario);
-                preparedStatement.setString(2, telefonos.getTelefono3());
-
-                preparedStatement.executeUpdate();
-            }catch (SQLException e) {
-                System.out.println("Error al consultar: " + e);
-            }
-        }
 
 
 
@@ -88,6 +127,27 @@ public class UserDB {
             preparedStatement.setString(2, user.getDireccion());
             preparedStatement.setString(3, user.getUsername());
             preparedStatement.setString(4, contrasena);
+            preparedStatement.setString(5, user.getEmail());
+            preparedStatement.setString(6, user.getCUI());
+            preparedStatement.setDate(7, user.getFechaFundacion());
+            preparedStatement.setString(8, user.getRol());
+
+            preparedStatement.executeUpdate();
+        }catch (SQLException e) {
+            System.out.println("Error al consultar: " + e);
+        }
+    }
+
+    public void crearUsuariOEmpleadorAdmin(User user) {
+        System.out.println("creando usuario");
+        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL)";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, user.getNombre());
+            preparedStatement.setString(2, user.getDireccion());
+            preparedStatement.setString(3, user.getUsername());
+            preparedStatement.setString(4, user.getPassword());
             preparedStatement.setString(5, user.getEmail());
             preparedStatement.setString(6, user.getCUI());
             preparedStatement.setDate(7, user.getFechaFundacion());

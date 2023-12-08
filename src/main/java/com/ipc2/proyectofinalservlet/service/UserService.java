@@ -12,6 +12,7 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
@@ -27,22 +28,38 @@ public class UserService  {
        User user = usuarioDB.comprobarCorreo(email);
         return user != null;
     }
-    public void crearUsuarioSolicitante(User user) {
+    public void crearUsuarioSolicitante(User user, boolean valor) {
         System.out.println("Crer Usuario");
-        String contreseña = generarContraseña(8);
-        usuarioDB.crearUsuarioSolicitante(user,contreseña);
-        enviarConGMail(user.getEmail(),"EmpleoGt","Hola Bienvenido a EmpleoGT esta es su contraseña : " + contreseña);
+        if (valor){
+            usuarioDB.crearUsuarioSolicitanteAdmin(user);
+        }else {
+            String contreseña = generarContraseña(8);
+            usuarioDB.crearUsuarioSolicitante(user, contreseña);
+            enviarConGMail(user.getEmail(), "EmpleoGt", "Hola Bienvenido a EmpleoGT esta es su contraseña : " + contreseña);
+        }
     }
 
-    public void crearTelefono(int usuario, Telefono telefono) {
-        usuarioDB.crearTelefonos(usuario, telefono);
+    public void crearTelefono(String telefono, User user) {
+        usuarioDB.crearTelefonos( telefono, user);
     }
 
-    public void crearUsuarioEmpleador(User user) {
+    public void eliminarUsuario(String username){
+        System.out.println("Eliminar Usuario");
+        usuarioDB.eliminarTelefonos(username);
+        usuarioDB.eliminarUsuario(username);
+    }
+
+
+    public void crearUsuarioEmpleador(User user,boolean valor) {
         System.out.println("Crer Usuario");
-        String contreseña = generarContraseña(8);
-        usuarioDB.crearUsuariOEmpleador(user,contreseña);
-        enviarConGMail(user.getEmail(),"EmpleoGt","Hola Bienvenido a EmpleoGT esta es su contraseña : " + contreseña);
+        if (valor){
+            usuarioDB.crearUsuariOEmpleadorAdmin(user);
+        }
+        else {
+            String contreseña = generarContraseña(8);
+            usuarioDB.crearUsuariOEmpleador(user, contreseña);
+            enviarConGMail(user.getEmail(), "EmpleoGt", "Hola Bienvenido a EmpleoGT esta es su contraseña : " + contreseña);
+        }
     }
 
     public void restablecerContrasena(String email){

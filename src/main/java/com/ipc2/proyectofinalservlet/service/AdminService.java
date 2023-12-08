@@ -6,6 +6,10 @@ import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.EntrevitaN;
+import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
+import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
+import com.ipc2.proyectofinalservlet.model.User.Telefono;
+import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -35,6 +39,11 @@ public class AdminService {
     public Categoria actualizarCategoria(int codigo,String nombre, String descripcion){
         System.out.println("Actualizar Categoria");
         return adminDB.cambiarCategoria(codigo,nombre,descripcion);
+    }
+
+    public void actualizarTelefono(NumTelefono telefono){
+        System.out.println("Actualizar Telefonos");
+        adminDB.actualizarTelefonos(telefono);
     }
 
     public Categoria listarCategoriaCodigo(int codigo){
@@ -76,6 +85,29 @@ public class AdminService {
         return adminDB.listarUsuarios(rol);
     }
 
+    public Usuarios listarUsuarioE(int codigo){
+        System.out.println("listar usuario E");
+        return adminDB.listarUsuario(codigo);
+    }
+
+    public List<NumTelefono> listarTelefonos(int codigo){
+        System.out.println("listar telefonos");
+        return adminDB.listarTelefonos(codigo);
+    }
+    public void actualizarUsuario(User usuario){
+        System.out.println("Actualizar Usuario");
+        adminDB.actualizarUsuario(usuario);
+    }
+
+    public void crearTelefonos( NumTelefono telefonos){
+        System.out.println("Crear Telefonos");
+        adminDB.crearTelefonos(telefonos);
+    }
+
+    public void eliminarCategoria(int codigo){
+        System.out.println("Eliminar categoria");
+        adminDB.eliminarCategoria(codigo);
+    }
     public void actualizarComision(int cantidad){
         System.out.println("Actualizar Comision");
         adminDB.actualizarComision(cantidad);

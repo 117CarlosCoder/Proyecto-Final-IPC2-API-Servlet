@@ -21,6 +21,7 @@ public class Usuarios {
     private String email;
     private String CUI;
     private Date fechaNacimiento;
+    private Date fechaFundacion;
     private String curriculum;
     private int[] categorias;
 }

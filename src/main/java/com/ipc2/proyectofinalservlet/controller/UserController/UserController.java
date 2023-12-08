@@ -1,3 +1,4 @@
+
 package com.ipc2.proyectofinalservlet.controller.UserController;
 
 
@@ -27,15 +28,23 @@ public class UserController extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        HttpSession session= null;
+        if ( getServletContext().getAttribute("userSession")!=null){
+            session = (HttpSession) getServletContext().getAttribute("userSession");
+        }else{
+            session = req.getSession();
+        }
+
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
         String uri = req.getRequestURI();
-        HttpSession session = req.getSession();
+        getServletContext().setAttribute("userSession", session);
         User usuario = (User) session.getAttribute("usuario");
 
         if (uri.endsWith("/crear-telefonos")) {
             Telefono telefono = readJsonTelefonos(resp,req);
-            if(usuario!=null) {
+            System.out.println(session.getAttribute("usuario"));
+            if(session.getAttribute("usuario")!=null) {
                 crearTelefonos(conexion, usuario, telefono);
             }
         }
@@ -48,7 +57,7 @@ public class UserController extends HttpServlet {
                 if (!comprobarEmail(conexion,user.getEmail())) {
                     session.setAttribute("usuario",user);
                     crearUsuarioSolicitante(conexion, user);
-                    conectar.desconectar(conexion);
+                    System.out.println( session.getAttribute("usuario"));
                     resp.setStatus(HttpServletResponse.SC_CREATED);
                 }
             }
@@ -64,7 +73,6 @@ public class UserController extends HttpServlet {
                 if (!comprobarEmail(conexion,user.getEmail())) {
                     session.setAttribute("usuario",user);
                     crearUsuarioEmpleador(conexion, user);
-                    conectar.desconectar(conexion);
                     resp.setStatus(HttpServletResponse.SC_CREATED);
                 }
             }
@@ -75,21 +83,21 @@ public class UserController extends HttpServlet {
         }
 
         if (uri.endsWith("/restablecer-contrasena")) {
-                String email = req.getParameter("email");
+            String email = req.getParameter("email");
 
 
-                if (email!=null){
-                    if (comprobarEmail(conexion,email)) {
-                        restablecerContrasena(conexion, email);
-                        conectar.desconectar(conexion);
-                        resp.setStatus(HttpServletResponse.SC_CREATED);
-                    }
+            if (email!=null){
+                if (comprobarEmail(conexion,email)) {
+                    restablecerContrasena(conexion, email);
+                    conectar.desconectar(conexion);
+                    resp.setStatus(HttpServletResponse.SC_CREATED);
                 }
+            }
 
-                else {
+            else {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 
-                }
+            }
         }
 
         if (uri.endsWith("/cargar-datos")) {
@@ -117,13 +125,22 @@ public class UserController extends HttpServlet {
 
     private void crearUsuarioSolicitante(Connection conexion, User user){
         userService = new UserService(conexion);
-        userService.crearUsuarioSolicitante(user);
+        userService.crearUsuarioSolicitante(user,false);
 
     }
     private void crearTelefonos(Connection conexion, User user, Telefono telefono){
         System.out.println("CrearTelefono");
         userService = new UserService(conexion);
-        userService.crearTelefono(user.getCodigo(),telefono);
+        if ((telefono.getTelefono1() != null)){
+            userService.crearTelefono(telefono.getTelefono1(), user);
+        }
+        if ((telefono.getTelefono2() != null)){
+            userService.crearTelefono(telefono.getTelefono2(),user);
+        }
+        if ((telefono.getTelefono3() != null)){
+            userService.crearTelefono(telefono.getTelefono3(),user);
+        }
+
 
     }
 
@@ -135,7 +152,7 @@ public class UserController extends HttpServlet {
 
     private void crearUsuarioEmpleador(Connection conexion, User user){
         userService = new UserService(conexion);
-        userService.crearUsuarioEmpleador(user);
+        userService.crearUsuarioEmpleador(user,false);
 
     }
 
