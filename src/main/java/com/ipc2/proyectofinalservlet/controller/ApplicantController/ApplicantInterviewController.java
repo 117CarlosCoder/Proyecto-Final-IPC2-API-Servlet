@@ -2,10 +2,8 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Entrevista;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.EntrevitaN;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
+import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
 import jakarta.servlet.ServletException;
@@ -15,9 +13,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.http.entity.ContentType;
+import org.apache.commons.io.IOUtils;
 
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 @WebServlet(name = "ApplicantInterviewManagerServlet", urlPatterns = {"/v1/applicant-interview-servlet/*"})
@@ -44,9 +47,31 @@ public class ApplicantInterviewController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
+        if(uri.endsWith("/listar-curriculum")) {
+            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            UsuarioPdf usuarioPdf = listarCurriculum(conexion,codigo);
+            System.out.println("usuario :" + codigo);
+            try (OutputStream out = resp.getOutputStream()) {
+                // Convierte los bytes del Blob a un InputStream
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(usuarioPdf.getPdfBytes());
+
+                // Copia el contenido del InputStream al OutputStream de la respuesta
+                IOUtils.copy(inputStream, out);
+                System.out.println("Salida : " + out);
+            } catch (IOException e) {
+                throw new ServletException("Error al enviar el PDF al cliente", e);
+            }
+            /*ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), usuarioPdf);*/
+            System.out.println("Pdf : "+ usuarioPdf);
+            resp.setContentType("application/pdf");
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
         if(uri.endsWith("/listar-oferta-postulacion")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
-            Ofertas oferta = listarOfetaPostulacion(conexion, codigo);
+            OfertasEmpresa oferta = listarOfetaPostulacion(conexion, codigo, user.getCodigo());
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             objectMapper.writeValue(resp.getWriter(), oferta);
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -58,8 +83,13 @@ public class ApplicantInterviewController extends HttpServlet {
         return applicantService.listarEntrevistas(usuario);
     }
 
-    private Ofertas listarOfetaPostulacion(Connection conexion, int codigo){
+    private UsuarioPdf listarCurriculum(Connection conexion, int usuario){
         applicantService = new ApplicantService(conexion);
-        return applicantService.listarOfetaCodigo(codigo);
+        return applicantService.listarCurriculum(usuario);
+    }
+
+    private OfertasEmpresa listarOfetaPostulacion(Connection conexion, int codigo,int usuarion){
+        applicantService = new ApplicantService(conexion);
+        return applicantService.listarOfetaCodigo(codigo, usuarion);
     }
 }

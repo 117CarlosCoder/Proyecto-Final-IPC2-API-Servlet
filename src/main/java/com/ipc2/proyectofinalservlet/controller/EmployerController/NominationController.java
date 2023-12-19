@@ -43,7 +43,7 @@ public class NominationController extends HelloServlet {
         }
 
         if (uri.endsWith("/cargar-entrevistas")) {
-            List<EntrevistaInfo> entrevistas = listarEntrevistas(conexion);
+            List<EntrevistaInfo> entrevistas = listarEntrevistas(conexion, user.getCodigo());
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             objectMapper.writeValue(resp.getWriter(), entrevistas);
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -74,7 +74,7 @@ public class NominationController extends HelloServlet {
         }
 
         if (uri.endsWith("/obtener-postulante")) {
-            Postulante postulante = obtenerPostulante(conexion,codigo);
+            Postulante postulante = obtenerPostulante(conexion,codigo, oferta);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             session.setAttribute("postulante",postulante);
             objectMapper.writeValue(resp.getWriter(), postulante);
@@ -112,6 +112,11 @@ public class NominationController extends HelloServlet {
             finalizarEntrevista(conexion,entrevista.getNotas(),entrevista.getUsuario(),entrevista.getCodigo());
             resp.setStatus(HttpServletResponse.SC_OK);
         }
+        if (uri.endsWith("/contratar")) {
+            Entrevista entrevista = readJsonEntrevista(resp,req);
+            contratar(conexion, entrevista.getUsuario(), entrevista.getCodigoOferta());
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
     }
 
     public List<Ofertas> listarOfertasEmpresasPostulaciones(Connection conexion, int empresa){
@@ -129,9 +134,14 @@ public class NominationController extends HelloServlet {
         return employerService.listarPostulaciones(empresa);
     }
 
-    public Postulante obtenerPostulante(Connection conexion, int usuario){
+    public Postulante obtenerPostulante(Connection conexion, int usuario, int oferta){
         employerService = new EmployerService(conexion);
-        return employerService.obtenerPostulante(usuario);
+        return employerService.obtenerPostulante(usuario, oferta);
+    }
+
+    public void contratar(Connection conexion, int usuario, int codigo){
+        employerService = new EmployerService(conexion);
+        employerService.contratar(usuario, codigo);
     }
 
     private void generarEntrevista(Connection conexion, int codigo,int codigoOferta, int usuario, Date fecha, String hora, String ubicacion ){
@@ -139,9 +149,9 @@ public class NominationController extends HelloServlet {
         employerService.generarEntrevista(codigo,codigoOferta,usuario,fecha,hora,ubicacion);
     }
 
-    public List<EntrevistaInfo> listarEntrevistas(Connection conexion){
+    public List<EntrevistaInfo> listarEntrevistas(Connection conexion, int empresa){
         employerService = new EmployerService(conexion);
-        return employerService.listarEntrevistas();
+        return employerService.listarEntrevistas(empresa);
     }
 
     public void finalizarEntrevista(Connection conexion,String notas,int usuario, int codigo){

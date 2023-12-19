@@ -3,10 +3,7 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.CompletarInformacionEmployerTarjeta;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.EstadoSolicitud;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
 import jakarta.servlet.ServletException;
@@ -44,7 +41,14 @@ public class ApplicantNominationController extends HttpServlet {
         }
         if(uri.endsWith("/listar-oferta-postulacion")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
-            Ofertas oferta = listarOfetaPostulacion(conexion, codigo);
+            boolean valor = Boolean.parseBoolean(req.getParameter("valor"));
+            OfertasEmpresa oferta = null;
+            if (valor){
+                oferta = listarOfetaPostulacion(conexion, codigo, user.getCodigo());
+            }
+            else {
+                oferta = listarOfetaPostulacionSinE(conexion, codigo, user.getCodigo());
+            }
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
             objectMapper.writeValue(resp.getWriter(), oferta);
@@ -57,9 +61,7 @@ public class ApplicantNominationController extends HttpServlet {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
 
         Connection conexion = (Connection) session.getAttribute("conexion");
-
         User user = (User) session.getAttribute("user");
-
         String uri = req.getRequestURI();
 
         if(uri.endsWith("/resgistrar-retirada-postulacion")) {
@@ -75,9 +77,7 @@ public class ApplicantNominationController extends HttpServlet {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
 
         Connection conexion = (Connection) session.getAttribute("conexion");
-
         User user = (User) session.getAttribute("user");
-
         String uri = req.getRequestURI();
 
         if(uri.endsWith("/eliminar-postulacion")) {
@@ -93,9 +93,14 @@ public class ApplicantNominationController extends HttpServlet {
         return applicantService.listarPostulaciones(usuario);
     }
 
-    private Ofertas listarOfetaPostulacion(Connection conexion, int codigo){
+    private OfertasEmpresa listarOfetaPostulacion(Connection conexion, int codigo, int usuario){
         applicantService = new ApplicantService(conexion);
-        return applicantService.listarOfetaCodigo(codigo);
+        return applicantService.listarOfetaCodigo(codigo,usuario);
+    }
+
+    private OfertasEmpresa listarOfetaPostulacionSinE(Connection conexion, int codigo, int usuario){
+        applicantService = new ApplicantService(conexion);
+        return applicantService.listarOfetaCodigoSinEntrevista(codigo,usuario);
     }
 
     private void registroRetiroPostulacion(Connection conexion, int usuario, String oferta, String fecha){

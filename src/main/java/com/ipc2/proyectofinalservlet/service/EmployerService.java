@@ -6,6 +6,7 @@ import com.ipc2.proyectofinalservlet.model.Employer.*;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -23,9 +24,9 @@ public class EmployerService {
         employerDB.completarInformacion(mision,vision,codigo);
     }
 
-    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad){
+    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, java.sql.Date fechaExpiracion, BigDecimal cantidad){
         System.out.println("Completar Informacion Tarjeta");
-        employerDB.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad);
+        employerDB.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad,fechaExpiracion,cantidad);
     }
 
     public void crearOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido){
@@ -57,6 +58,11 @@ public class EmployerService {
         return employerDB.listarOfertasEmpresa(empresa);
     }
 
+    public List<Ofertas> listarOfertasEmpresaPos(int empresa){
+        System.out.println("listar ofertas Empresa");
+        return employerDB.listarOfertasEmpresaPostulaciones(empresa);
+    }
+
     public List<Ofertas> listarOfertasEmpresaPostulaciones(int empresa){
         System.out.println("listar ofertas Empresa Postulaciones");
         return employerDB.listarOfertasEmpresaPostulantes(empresa);
@@ -67,9 +73,9 @@ public class EmployerService {
         return employerDB.listarPostulaciones(codigo);
     }
 
-    public Postulante obtenerPostulante(int usuario){
+    public Postulante obtenerPostulante(int usuario, int oferta){
         System.out.println("listar Postulaciones");
-        return employerDB.obtenerPostulante(usuario);
+        return employerDB.obtenerPostulante(usuario, oferta);
     }
     public void eliminarOfetas(int codigo){
         System.out.println("eliminar ofertas");
@@ -82,9 +88,9 @@ public class EmployerService {
         employerDB.generarEntrevista(codigo,codigoOferta,usuario,fecha,hora,ubicacion);
     }
 
-    public List<EntrevistaInfo> listarEntrevistas(){
+    public List<EntrevistaInfo> listarEntrevistas(int empresa)   {
         System.out.println("listar entrevista");
-        return employerDB.listarEntrevista();
+        return employerDB.listarEntrevista(empresa);
     }
 
     public List<OfertaCostos> listarCostosOfertas( ){
@@ -109,6 +115,11 @@ public class EmployerService {
     public void finalizarEntrevista(String notas, int usuario , int codigo){
         System.out.println("finalizar entrevista");
         employerDB.finalizarEntrevista(notas,usuario,codigo);
+    }
+
+    public void contratar(int usuario, int codigo){
+        System.out.println("Contratar");
+        employerDB.contratar(usuario, codigo);
     }
 
     public List<Modalidades> listarModalidades(){

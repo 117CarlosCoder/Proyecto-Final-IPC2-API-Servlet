@@ -34,14 +34,16 @@ public class EmployerDB {
         }
     }
 
-    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad) {
-        String query = "INSERT INTO tarjeta VALUES(?,?,?,?,?)";
-        try (var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1, codigo);
-            preparedStatement.setInt(2, codigoUsuario);
-            preparedStatement.setString(3, Titular);
-            preparedStatement.setInt(4, numero);
-            preparedStatement.setInt(5, codigoSeguridad);
+    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, java.sql.Date fechaExpiracion, BigDecimal cantidad){
+        String query = "INSERT INTO tarjeta VALUES(?,?,?,?,?,?,?)";
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, Types.NULL  );
+            preparedStatement.setInt(2,codigoUsuario);
+            preparedStatement.setString(3,Titular);
+            preparedStatement.setInt(4,numero);
+            preparedStatement.setInt(5,codigoSeguridad);
+            preparedStatement.setDate(6,fechaExpiracion);
+            preparedStatement.setBigDecimal(7,cantidad);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -185,13 +187,49 @@ public class EmployerDB {
     }
 
     public List<Ofertas> listarOfertasEmpresa(int numEmpresa) {
-        String query = "SELECT * FROM ofertas WHERE empresa = ? AND estado = 'ACTIVA' OR empresa = ? AND estado = 'SELECCION' ";
+        String query = "SELECT * FROM ofertas WHERE empresa = ? ";
+        List<Ofertas> ofertas = new ArrayList<>();
+        Ofertas oferta = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, numEmpresa);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var descripcion = resultSet.getString("descripcion");
+                    var empresa = resultSet.getInt("empresa");
+                    var categoria = resultSet.getInt("categoria");
+                    var estado = resultSet.getString("estado");
+                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
+                    var fechaLimite = resultSet.getDate("fechaLimite");
+                    var salario = resultSet.getBigDecimal("salario");
+                    var modalidad = resultSet.getString("salario");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var detalles = resultSet.getString("detalles");
+                    var usuarioElegido = resultSet.getInt("usuarioElegido");
+                    oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
+                    ofertas.add(oferta);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al listar oferta de empresa: " + e);
+        }
+
+        return ofertas;
+    }
+
+    public List<Ofertas> listarOfertasEmpresaPostulaciones(int numEmpresa) {
+        String query = "SELECT * FROM ofertas WHERE empresa = ? AND estado = 'ACTIVA' OR empresa = ? AND estado = 'SELECCION' OR empresa = ? AND estado = 'ENTREVISTA'";
         List<Ofertas> ofertas = new ArrayList<>();
         Ofertas oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setInt(1, numEmpresa);
             preparedStatement.setInt(2, numEmpresa);
+            preparedStatement.setInt(3, numEmpresa);
 
 
             try (var resultSet = preparedStatement.executeQuery()) {
@@ -254,7 +292,34 @@ public class EmployerDB {
         return ofertas;
     }
 
+    public Entrevista listarEntrevistaPostulante(int usuarion, int codigoOfertan) {
+        String query = "SELECT * FROM solicitudes WHERE usuario = ? AND codigoOferta = ?";
+        Entrevista entrevista = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
 
+            preparedStatement.setInt(1, usuarion);
+            preparedStatement.setInt(2, codigoOfertan);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var codigoOferta = resultSet.getInt("codigoOferta");
+                    var usuario = resultSet.getInt("usuario");
+                    var fecha = resultSet.getDate("fecha");
+                    var hora = resultSet.getString("hora");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var estado = resultSet.getString("estado");
+                    var notas = resultSet.getString("notas");
+                    entrevista = new Entrevista(codigo,usuario,fecha,hora,ubicacion,estado,notas,codigoOferta);
+
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al listar ofertasPostulantes: " + e);
+        }
+
+        return entrevista;
+    }
 
     public void eliminarOfertas(int codigo) {
         try (var preparedStatement = conexion.prepareStatement("DELETE FROM ofertas WHERE codigo = ?")) {
@@ -300,7 +365,7 @@ public class EmployerDB {
     }
 
     public List<EstadoSolicitudPostulante> listarPostulaciones(int codigoN) {
-        String query = " SELECT s.codigo, s.codigoOferta, s.usuario, o.estado, o.nombre, u.nombre AS 'nombreUsuario'FROM solicitudes s JOIN ofertas o ON s.codigoOferta = o.codigo JOIN usuarios u ON s.usuario = u.codigo WHERE s.codigoOferta = ?";
+        String query = " SELECT s.codigo, s.codigoOferta, s.usuario, o.estado, o.nombre, u.nombre AS 'nombreUsuario' FROM solicitudes s  JOIN ofertas o ON s.codigoOferta = o.codigo  JOIN usuarios u ON s.usuario = u.codigo WHERE s.codigoOferta = ? AND NOT EXISTS (SELECT 1 FROM entrevistas e WHERE e.codigoOferta = s.codigoOferta AND e.usuario = s.usuario )";
         List<EstadoSolicitudPostulante> solicitudes = new ArrayList<>();
         EstadoSolicitudPostulante solicitud = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -327,14 +392,15 @@ public class EmployerDB {
         return solicitudes;
     }
 
-    public Postulante obtenerPostulante(int usuario) {
+    public Postulante obtenerPostulante(int usuario, int ofertan) {
         System.out.println("Obteniendo usuario");
-        String query = "SELECT usuarios.*, solicitudes.mensaje, solicitudes.codigoOferta FROM solicitudes INNER JOIN usuarios ON solicitudes.usuario = usuarios.codigo WHERE solicitudes.usuario = ?";
+        String query = "SELECT usuarios.*, solicitudes.mensaje, solicitudes.codigoOferta FROM solicitudes INNER JOIN usuarios ON solicitudes.usuario = usuarios.codigo WHERE solicitudes.usuario = ? AND solicitudes.codigoOferta = ?";
         Postulante postulante = null;
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setInt(1, usuario);
+            preparedStatement.setInt(2, ofertan);
 
             try (var resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
@@ -400,28 +466,31 @@ public class EmployerDB {
         }
     }
 
-    public List<EntrevistaInfo> listarEntrevista() {
-        String query = "SELECT e.*, u.nombre, o.nombre AS 'nombreOferta' FROM entrevistas e INNER JOIN usuarios u ON e.usuario = u.codigo INNER JOIN ofertas o ON o.codigo = e.codigoOferta";
+    public List<EntrevistaInfo> listarEntrevista(int empresan)  {
+        String query = "SELECT e.*, u.nombre, o.nombre AS 'nombreOferta' FROM entrevistas e INNER JOIN usuarios u ON e.usuario = u.codigo INNER JOIN ofertas o ON o.codigo = e.codigoOferta WHERE o.empresa = ? AND e.fecha  >= CURDATE()";
         List<EntrevistaInfo> entrevistas = new ArrayList<>();
         EntrevistaInfo entrevista = null;
-        try (var select = conexion.prepareStatement(query)) {
-            ResultSet resultset = select.executeQuery();
-            while (resultset.next()) {
-                var codigo = resultset.getInt("codigo");
-                var usuario = resultset.getInt("usuario");
-                var fecha = resultset.getDate("fecha");
-                var hora = resultset.getTime("hora");
-                var ubicacion = resultset.getString("ubicacion");
-                var estado = resultset.getString("estado");
-                var notas = resultset.getString("notas");
-                var codigoOferta = resultset.getInt("codigoOferta");
-                var nombre = resultset.getString("nombre");
-                var nombreOferta = resultset.getString("nombreOferta");
-                entrevista = new EntrevistaInfo(codigo, usuario, fecha, hora, ubicacion, estado, notas, codigoOferta, nombre, nombreOferta);
-                entrevistas.add(entrevista);
-            }
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, empresan);
 
-        } catch (SQLException e) {
+            try (var resultset = preparedStatement.executeQuery()) {
+                while (resultset.next()) {
+                    var codigo = resultset.getInt("codigo");
+                    var usuario = resultset.getInt("usuario");
+                    var fecha = resultset.getDate("fecha");
+                    var hora = resultset.getTime("hora");
+                    var ubicacion = resultset.getString("ubicacion");
+                    var estado = resultset.getString("estado");
+                    var notas = resultset.getString("notas");
+                    var codigoOferta = resultset.getInt("codigoOferta");
+                    var nombre = resultset.getString("nombre");
+                    var nombreOferta = resultset.getString("nombreOferta");
+                    entrevista = new EntrevistaInfo(codigo, usuario, fecha, hora, ubicacion, estado, notas, codigoOferta, nombre, nombreOferta);
+                    entrevistas.add(entrevista);
+                }
+        }
+
+    } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         return entrevistas;
@@ -439,6 +508,95 @@ public class EmployerDB {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void contratar( int usuario, int codigo) {
+        String query = "UPDATE ofertas SET usuarioElegido = ? WHERE codigo = ? ";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, usuario);
+            preparedStatement.setInt(2, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        try (var preparedStatement = conexion.prepareStatement("UPDATE tarjeta SET cantidad = ? WHERE codigoUsuario = ?")) {
+            preparedStatement.setBigDecimal(1, listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()));
+            preparedStatement.setInt(2, usuarioEmpresa(codigo));
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+
+        crearCobroComision(codigo,usuario,usuarioEmpresa(codigo),comision(),listarCantidadTarjeta(usuarioEmpresa(codigo)),listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()));
+    }
+
+    public void crearCobroComision(int oferta,int usuario, int empresa, BigDecimal cobro, BigDecimal cantidadTarjeta, BigDecimal Total){
+        String query = "INSERT INTO cobroComision VALUES(NULL,?,?,?,?,?,?,NOW())";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, oferta);
+            preparedStatement.setInt(2, usuario);
+            preparedStatement.setInt(3, empresa);
+            preparedStatement.setBigDecimal(4, cobro);
+            preparedStatement.setBigDecimal(5, cantidadTarjeta);
+            preparedStatement.setBigDecimal(6, Total);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public int usuarioEmpresa(int ofertan) {
+        String query = "SELECT * FROM ofertas WHERE codigo = ?";
+        int empresa = 0;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, ofertan);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    empresa = resultSet.getInt("empresa");
+                }    }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar: " + e);
+        }
+
+        return empresa;
+    }
+
+    public BigDecimal listarCantidadTarjeta(int usuarion) {
+        String query = "SELECT * FROM tarjeta WHERE codigoUsuario = ?";
+        BigDecimal cantidad = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, usuarion);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    cantidad = resultSet.getBigDecimal("cantidad");
+                }    }
+        } catch (SQLException e) {
+            System.out.println("Error al listar cantidad: " + e);
+        }
+
+        return cantidad;
+    }
+
+    public BigDecimal comision(){
+        String query = "SELECT * FROM comision";
+        BigDecimal cantidad  = null;
+        try (var select = conexion.prepareStatement(query)) {
+            ResultSet resultSet = select.executeQuery();
+            while (resultSet.next()) {
+                cantidad = resultSet.getBigDecimal("cantidad");
+            }
+        }  catch (SQLException e) {
+            System.out.println("Error al listar comision: " + e);
+        }
+
+        return cantidad;
     }
 
     public List<OfertaCostos> listarOfertasCostos() {
@@ -465,8 +623,6 @@ public class EmployerDB {
 
         return ofertasCostos;
     }
-
-    //
 
     public List<EntrevistaFecha> listarEntrevistaFecha(java.sql.Date fechan, int empresaN, String estadon) {
         String query = "SELECT e.codigo,o.nombre AS 'Oferta', e.fecha,u.nombre AS 'Empresa',e.estado FROM entrevistas e INNER JOIN ofertas o ON o.codigo =  e.codigoOferta INNER JOIN usuarios u ON u.codigo = o.empresa WHERE o.empresa=? AND e.fecha = ? AND e.estado = ?";
@@ -541,7 +697,5 @@ public class EmployerDB {
 
             return ofertas;
         }
-
-
 
 }

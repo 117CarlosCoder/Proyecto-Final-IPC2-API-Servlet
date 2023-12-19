@@ -26,7 +26,7 @@ import java.util.Map;
 public class EmployerReports extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String resources = "/home/carlos117/Documentos/Ipc2/Proyecto Final IPC2 Angular y Sevlets/Proyecto-Final-Servlet/src/main/webapp/reportes/Employer/";
+        String resources = "/home/carlos/Documentos/ipc2/Proyecto-Final-IPC2-API-Servlet/src/main/webapp/reportes/Employer/";
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
         User user = (User) session.getAttribute("user");
 

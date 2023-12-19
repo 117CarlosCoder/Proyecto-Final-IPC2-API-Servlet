@@ -45,7 +45,15 @@ public class AdminReportsChangerServlet extends HttpServlet {
             String fechaA = req.getParameter("fechaA");
             String fechaB = req.getParameter("fechaB");
             int categoria = Integer.parseInt(req.getParameter("categoria"));
-            CantidadTotal cantidadTotal = litarTotal(conexion,categoria, fechaA,fechaB);
+            boolean valor = Boolean.parseBoolean(req.getParameter("valor"));
+            System.out.println("Valor : " + valor);
+            CantidadTotal cantidadTotal = null;
+            if (valor){
+                 cantidadTotal = litarTotal(conexion,categoria, fechaA,fechaB);
+            }
+            else {
+                cantidadTotal = listarTotalSinFecha(conexion);
+            }
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
             objectMapper.writeValue(resp.getWriter(), cantidadTotal);
@@ -84,6 +92,10 @@ public class AdminReportsChangerServlet extends HttpServlet {
     public CantidadTotal litarTotal(Connection conexion, int categoria, String fechaA , String fechaB){
         adminService = new AdminService(conexion);
         return adminService.ofertaTotal(categoria, fechaA, fechaB);
+    }
+    public CantidadTotal listarTotalSinFecha(Connection conexion){
+        adminService = new AdminService(conexion);
+        return adminService.ofertaTotalSinFecha();
     }
 
     public List<RegistroComision> listarRegistroComision(Connection conexion){

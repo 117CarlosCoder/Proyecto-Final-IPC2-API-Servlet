@@ -17,6 +17,7 @@ import jakarta.servlet.http.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.entity.ContentType;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.Objects;
 
@@ -26,25 +27,19 @@ import static java.sql.JDBCType.NULL;
 public class LoginController extends HttpServlet {
     private SesionService usuarioService;
     private User usergeneral;
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        //HttpSession session = (HttpSession) req.getAttribute("userSession");
-        System.out.println("sesion: "+ session);
         Conexion conectar = new Conexion();
-        Connection conexion = (Connection) session.getAttribute("conexion");
-        String angularSessionId = req.getHeader("X-Angular-Session-Id");
-        System.out.println("Sesion desde angular cookie:" + angularSessionId);
+        Connection conexion = conectar.obtenerConexion();
+        HttpSession session = req.getSession(true);
+
         String uri = req.getRequestURI();
-
-
 
         if (uri.endsWith("/cerrar-sesion")) {
             System.out.println("Cerrar Sesion");
+            resp.setStatus(HttpServletResponse.SC_OK);
             conectar.desconectar(conexion);
             session.invalidate();
-            resp.setStatus(HttpServletResponse.SC_OK);
         }
     }
 
@@ -53,98 +48,71 @@ public class LoginController extends HttpServlet {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
         HttpSession session = req.getSession(true);
-        req.getSession().setMaxInactiveInterval(30 * 60);
-        System.out.println("sesion: "+ session.getId());
-        String  sessionid = session.getId();
-        getServletContext().setAttribute("userSession", session);
-        //session.setAttribute("userSession", session);
+        login user = (login) leerJson(resp,req,login.class);
 
-        System.out.println("Sesion Abierta : " + session.getId());
-        session.setAttribute("conexion", conexion);
-
-        login user = readJson(resp,req,conexion);
-        cargarDatosInicio(conexion,150);
+        cargarDatosInicio(conexion,new BigDecimal(150));
 
         try {
             System.out.println("iniciando sesion");
-            if (validarUsuario(conexion,user.getUsername(), user.getPassword(), user.getUsername(), session)) {
-
+            if (validarUsuario(conexion,user.getUsername(), user.getPassword(), user.getUsername())!=null) {
                 if (null == usergeneral.getCurriculum() && usergeneral.getRol().equals("Solicitante")) {
-
                     resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-                    System.out.println(1);
-                    System.out.println("valido :");
-                    Rol rol = new Rol(usergeneral.getRol(),sessionid);
-                    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                    objectMapper.writeValue(resp.getWriter(), rol);
-                    resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-                    System.out.println(rol);
-                    System.out.println(conexion);
-                    System.out.println(usergeneral.getCurriculum());
-
+                    Rol rol = new Rol(usergeneral.getRol());
+                    enviarJson(resp,rol);
                 }
                 if (null == usergeneral.getMision() && usergeneral.getRol().equals("Empleador")) {
-
                     resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-                    System.out.println(2);
-                    System.out.println("valido :");
-                    Rol rol = new Rol(usergeneral.getRol(), sessionid);
-                    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                    objectMapper.writeValue(resp.getWriter(), rol);
-                    resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-                    System.out.println(rol);
-                    System.out.println(conexion);
-                    System.out.println(usergeneral.getMision());
+                    Rol rol = new Rol(usergeneral.getRol());
+                    enviarJson(resp,rol);
 
-                } else {
-                    System.out.println(3);
-                    Rol rol = new Rol(usergeneral.getRol(), sessionid);
-                    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                    objectMapper.writeValue(resp.getWriter(), rol);
-                    resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-                    System.out.println(rol);
-                    System.out.println(conexion);
-                    resp.setStatus(HttpServletResponse.SC_OK);
                 }
-
-
+                else {
+                    resp.setStatus(HttpServletResponse.SC_OK);
+                    Rol rol = new Rol(usergeneral.getRol());
+                    enviarJson(resp,rol);
+                }
             }
             else {
-                System.out.println("no valido ");
+                System.out.println("Usuario no valido ");
                 conectar.desconectar(conexion);
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
         } catch (Exception e) {
             conectar.desconectar(conexion);
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+
         }
 
     }
 
-    public boolean validarUsuario(Connection conexion,String username, String password, String email,HttpSession session) {
+    public User validarUsuario(Connection conexion,String username, String password, String email) {
         System.out.println("validar : ");
         usuarioService = new SesionService(conexion);
-        var oUsuario = usuarioService.obtenerUsuario(username, password, email);
-        if (oUsuario.isEmpty()) return false;
-        usergeneral = oUsuario.get();
-        session.setAttribute("user",usergeneral);
-        return true ;
+        usergeneral = usuarioService.obtenerUsuario(username, password, email);
+        return usergeneral;
     }
-
-    public login readJson(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
+    public Object leerJson(HttpServletResponse resp, HttpServletRequest req , Class clase) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        login user = objectMapper.readValue(req.getInputStream(), login.class);
-        usuarioService = new SesionService(conexion);
+        Object valor = objectMapper.readValue(req.getInputStream(), clase);
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return user;
+        return valor;
     }
 
-    public void cargarDatosInicio(Connection conexion,int cantidad){
+    public void enviarJson(HttpServletResponse resp, Object valor) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        objectMapper.writeValue(resp.getWriter(), valor);
+        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+
+    }
+
+    public void cargarDatosInicio(Connection conexion, BigDecimal cantidad){
         CargarDatosService cargarDatosService = new CargarDatosService(conexion);
         if (!cargarDatosService.listarComision()){
             cargarDatosService.crearComision(cantidad);
         }
     }
+
+
 
 
 

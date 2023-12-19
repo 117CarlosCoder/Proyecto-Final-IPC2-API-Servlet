@@ -2,6 +2,7 @@ package com.ipc2.proyectofinalservlet.model.CargarDatos;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 
 @Getter
@@ -16,5 +17,6 @@ public class CompletarInformacionEmployerTarjeta {
     private int numero;
     private int codigoSeguridad;
     private Date fechaExpiracion;
+    private BigDecimal cantidad;
 }
 

@@ -175,11 +175,11 @@ public class CargaDB {
 
     }
 
-    public Comision crearComision(int cantidadE){
+    public Comision crearComision(BigDecimal cantidadE){
         String query = "INSERT INTO comision VALUES(1,?)";
         Comision comision = null;
         try(var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1,cantidadE);
+            preparedStatement.setBigDecimal(1,cantidadE);
             comision = new Comision(1,cantidadE);
             preparedStatement.executeUpdate();
 
@@ -189,11 +189,12 @@ public class CargaDB {
         return comision;
     }
 
-    public Comision cambiarComision(int cantidadE){
+    public Comision cambiarComision(BigDecimal cantidadE){
         String query = "UPDATE comision SET cantidad = ? WHERE codigo = 1";
         Comision comision = null;
+        System.out.println(cantidadE);
         try(var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1,cantidadE);
+            preparedStatement.setBigDecimal(1,cantidadE);
             comision = new Comision(1,cantidadE);
             preparedStatement.executeUpdate();
 
@@ -210,7 +211,7 @@ public class CargaDB {
             ResultSet resultset = select.executeQuery();
             if (resultset.next()) {
                 var codigo = resultset.getInt("codigo");
-                var cantidad = resultset.getInt("cantidad");
+                var cantidad = resultset.getBigDecimal("cantidad");
                 comision = new Comision(codigo,cantidad);
             }
 

@@ -71,10 +71,14 @@ public class AdminService {
     }
 
     public CantidadTotal ofertaTotal(int categoria, String fechaA, String fechaB){
-        System.out.println("Top Empleadores");
+        System.out.println("Oferta Total");
         return adminDB.ofertaTotalFecha(categoria, fechaA, fechaB);
     }
 
+    public CantidadTotal ofertaTotalSinFecha(){
+        System.out.println("Oferta Total");
+        return adminDB.ofertaTotal();
+    }
     public List<IngresoTotal> ingresoTotalFecha( String fechaA, String fechaB){
         System.out.println("Top Ingresos");
         return adminDB.ingresoTotalFecha(fechaA, fechaB);

@@ -32,13 +32,17 @@ public class EmployerControler extends HttpServlet {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
 
         Connection conexion = (Connection) session.getAttribute("conexion");
-
         User user = (User) session.getAttribute("user");
-
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/cargar-ofertas")) {
             List<Ofertas> ofertas = listarOfertasEmpresas(conexion, user.getCodigo());
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            objectMapper.writeValue(resp.getWriter(), ofertas);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+        if (uri.endsWith("/cargar-ofertas-postulantes")) {
+            List<Ofertas> ofertas = listarOfertaPostulaciones(conexion, user.getCodigo());
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             objectMapper.writeValue(resp.getWriter(), ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -69,12 +73,10 @@ public class EmployerControler extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-
         Connection conexion = (Connection) session.getAttribute("conexion");
-
         String uri = req.getRequestURI();
-
         User user = (User) session.getAttribute("user");
 
         if (uri.endsWith("/completar-informacion")) {
@@ -85,7 +87,7 @@ public class EmployerControler extends HttpServlet {
 
         if (uri.endsWith("/completar-informacion-tarjeta")) {
             CompletarInformacionEmployerTarjeta completarInformacionEmployerTarjeta = readJsonTarjeta(resp, req);
-            completarInformacionTarjeta(conexion, completarInformacionEmployerTarjeta.getCodigo(), completarInformacionEmployerTarjeta.getCodigoUsuario(), completarInformacionEmployerTarjeta.getTitular(),completarInformacionEmployerTarjeta.getNumero(),completarInformacionEmployerTarjeta.getCodigoSeguridad());
+            completarInformacionTarjeta(conexion, user.getCodigo(), user.getCodigo(), completarInformacionEmployerTarjeta.getTitular(),completarInformacionEmployerTarjeta.getNumero(),completarInformacionEmployerTarjeta.getCodigoSeguridad(),completarInformacionEmployerTarjeta.getFechaExpiracion(), completarInformacionEmployerTarjeta.getCantidad());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
@@ -98,7 +100,7 @@ public class EmployerControler extends HttpServlet {
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws  IOException {
         HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
 
         Connection conexion = (Connection) session.getAttribute("conexion");
@@ -149,14 +151,19 @@ public class EmployerControler extends HttpServlet {
         employerService.completarInformacion(mision,vision,id);
     }
 
-    private void completarInformacionTarjeta(Connection conexion,int codigo, int codigoUsuario, String Titular,int numero,int codigoSeguridad){
+    private void completarInformacionTarjeta(Connection conexion,int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, java.sql.Date fechaExpiracion, BigDecimal catidad){
         employerService = new EmployerService(conexion);
-        employerService.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad);
+        employerService.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad, fechaExpiracion, catidad);
     }
 
     public List<Ofertas> listarOfertasEmpresas(Connection conexion, int empresa){
         employerService = new EmployerService(conexion);
         return employerService.listarOfertasEmpresa(empresa);
+    }
+
+    public List<Ofertas> listarOfertaPostulaciones(Connection conexion, int empresa){
+        employerService = new EmployerService(conexion);
+        return employerService.listarOfertasEmpresaPos(empresa);
     }
     private CompletarInformacionEmployer readJson(HttpServletResponse resp, HttpServletRequest req) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());

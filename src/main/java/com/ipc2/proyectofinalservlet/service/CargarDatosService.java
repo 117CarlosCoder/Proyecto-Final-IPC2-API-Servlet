@@ -4,6 +4,7 @@ import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.data.SesionDB;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 
 public class CargarDatosService {
@@ -14,11 +15,11 @@ public class CargarDatosService {
         this.cargaDB = new CargaDB(conexion);
     }
 
-    public Comision crearComision(int cantidad){
+    public Comision crearComision(BigDecimal cantidad){
         System.out.println("Crear comision");
         return cargaDB.crearComision(cantidad);
     }
-    public Comision actualizarComision(int cantidad){
+    public Comision actualizarComision(BigDecimal cantidad){
         System.out.println("Actualizar comision");
         return cargaDB.cambiarComision(cantidad);
     }

@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ipc2.proyectofinalservlet.data.AdminDB;
 import com.ipc2.proyectofinalservlet.data.CargaDB;
+import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Admin.Dashboard;
 import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
@@ -20,6 +21,7 @@ import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.model.User.login;
 import com.ipc2.proyectofinalservlet.service.AdminService;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
+import com.ipc2.proyectofinalservlet.service.SesionService;
 import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -31,6 +33,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.util.Base64;
 import java.util.List;
 
 @WebServlet(name = "AdminManagerServlet", urlPatterns = {"/v1/admin-servlet/*"})
@@ -38,79 +41,65 @@ public class AdminController extends HttpServlet {
 
     private CargarDatosService cargarDatosService;
     private AdminService adminService;
-
+    private SesionService sesionService;
     private UserService userService;
+    private String username;
+    private String password;
+
+    private User user;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
 
+        String authorizationHeader = req.getHeader("Authorization");
+        autorizacion(authorizationHeader,resp);
 
-        String angularSessionId = req.getHeader("X-Angular-Session-Id");
-        System.out.println("Sesion desde angular cookie:" + angularSessionId);
-        /*Cookie[] cookies = req.getCookies();
-        HttpSession httpSession = null;
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("userData".equals(cookie.getName())) {
-                    // Recuperar y procesar la información de la cookie
-                    String userDataJson = cookie.getValue();
-                    System.out.println("data : " + userDataJson);
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    httpSession = objectMapper.readValue(userDataJson, HttpSession.class);
-                    // Hacer algo con la información recuperada
-                }
-            }
-        }*/
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        //HttpSession session =  req.getSession(false);
-        System.out.println("sesion get : " + session);
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        user = validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Administrador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/cargar-categorias")) {
             List<Categoria> categorias = listarCategorias(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), categorias);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,categorias);
         }
         if (uri.endsWith("/cargar-categoria")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
             Categoria categorias = listarCategoriaCodigo(conexion,codigo);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), categorias);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,categorias);
         }
         if (uri.endsWith("/listar-dashboard")) {
             Dashboard dashboard = listarDashboard(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), dashboard);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,dashboard);
         }
 
         if (uri.endsWith("/listar-comision")) {
             Comision comision = listarComision(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), comision);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,comision);
         }
 
         if (uri.endsWith("/listar-usuarios")) {
             String rol = req.getParameter("rol");
             List<Usuarios> usuarios = listarUsuarios(conexion,rol);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), usuarios);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,usuarios);
         }
 
         if (uri.endsWith("/listar-usuario")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
             Usuarios usuario = listarUsuario(conexion,codigo);
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), usuario);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
+        if (uri.endsWith("/listar-usuario-especifico")) {
+            Usuarios usuario = listarUsuario(conexion, user.getCodigo());
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
             objectMapper.writeValue(resp.getWriter(), usuario);
@@ -126,14 +115,30 @@ public class AdminController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
+        if (uri.endsWith("/listar-telefonos-usuario-especifico")) {
+            List<NumTelefono> telefonos = listarTelefonos(conexion, user.getCodigo());
+            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            objectMapper.writeValue(resp.getWriter(), telefonos);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
 
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        //HttpSession session = req.getSession(false);
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
+        HttpSession session = req.getSession(true);
+        login credenciales = (login) leerJson(resp,req,login.class);
+
+        user = validarUsuario(conexion,credenciales.getUsername(),credenciales.getPassword(),credenciales.getUsername());
+        if (!user.getRol().equals("Administrador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
 
         String uri = req.getRequestURI();
 
@@ -169,9 +174,17 @@ public class AdminController extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        //HttpSession session = (HttpSession) req.getAttribute("userSession");
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
+        HttpSession session = req.getSession(true);
+        login credenciales = (login) leerJson(resp,req,login.class);
+
+        user = validarUsuario(conexion,credenciales.getUsername(),credenciales.getPassword(),credenciales.getUsername());
+        if (!user.getRol().equals("Administrador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
 
         String uri = req.getRequestURI();
 
@@ -184,10 +197,9 @@ public class AdminController extends HttpServlet {
         if (uri.endsWith("/actualizar-comision")) {
 
             Comision comision = readJson(resp,req,conexion);
+            System.out.println("Comision : "+comision);
             actualizarComision(conexion,comision.getCantidad());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-
-
         }
 
         if (uri.endsWith("/actualizar-usuario")) {
@@ -215,10 +227,17 @@ public class AdminController extends HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        //HttpSession session = (HttpSession) req.getAttribute("userSession");
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        System.out.println("sesion delete : " + session);
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
+        HttpSession session = req.getSession(true);
+        login credenciales = (login) leerJson(resp,req,login.class);
+
+        user = validarUsuario(conexion,credenciales.getUsername(),credenciales.getPassword(),credenciales.getUsername());
+        if (user.getRol().equals("Administrador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/eliminar-usuario")) {
@@ -237,7 +256,8 @@ public class AdminController extends HttpServlet {
 
     }
 
-    public void actualizarComision(Connection conexion, int cantidad){
+    public void actualizarComision(Connection conexion, BigDecimal cantidad){
+        System.out.println("Nueva comision: "+ cantidad);
         cargarDatosService = new CargarDatosService(conexion);
         cargarDatosService.actualizarComision(cantidad);
     }
@@ -370,17 +390,11 @@ public class AdminController extends HttpServlet {
 
     private List<NumTelefono> readJsonTelefonos(HttpServletResponse resp, HttpServletRequest req) throws IOException {
         Gson gson = new Gson();
-
         try (Reader reader = req.getReader()) {
-            // Lee la entrada del flujo de datos de la solicitud HTTP
             List<NumTelefono> numTelefonos = gson.fromJson(reader, new TypeToken<List<NumTelefono>>() {}.getType());
-
-            // Configura el Content-Type de la respuesta (revisar si esto es necesario aquí)
             resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-
             return numTelefonos;
         } catch (IOException e) {
-            // Maneja la excepción o relanza una nueva excepción más específica si es necesario
             throw new IOException("Error al procesar la solicitud JSON", e);
         }
     }
@@ -396,5 +410,41 @@ public class AdminController extends HttpServlet {
         Categoria categoria = objectMapper.readValue(req.getInputStream(), Categoria.class);
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
         return categoria;
+    }
+
+    public Object leerJson(HttpServletResponse resp, HttpServletRequest req , Class clase) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        Object valor = objectMapper.readValue(req.getInputStream(), clase);
+        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+        return valor;
+    }
+
+    public void enviarJson(HttpServletResponse resp, Object valor) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        objectMapper.writeValue(resp.getWriter(), valor);
+        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+
+    }
+
+    public User validarUsuario(Connection conexion,String username, String password, String email) {
+        System.out.println("validar : ");
+        sesionService = new SesionService(conexion);
+        return sesionService.obtenerUsuario(username, password, email);
+    }
+
+    public void autorizacion(String authorizationHeader, HttpServletResponse resp) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
+            String base64Credentials = authorizationHeader.substring("Basic ".length()).trim();
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+            String[] parts = credentials.split(":", 2);
+            username = parts[0];
+            password = parts[1];
+            System.out.println("Username: " + username);
+            System.out.println("Password: " + password);
+        }
+        else {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+        }
+
     }
 }

@@ -2,6 +2,8 @@ package com.ipc2.proyectofinalservlet.model.CargarDatos;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @ToString
@@ -9,5 +11,5 @@ import lombok.*;
 @AllArgsConstructor
 public class Comision {
     private int codigo;
-    private int cantidad;
+    private BigDecimal cantidad;
 }

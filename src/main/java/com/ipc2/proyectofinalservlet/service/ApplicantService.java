@@ -1,13 +1,14 @@
 package com.ipc2.proyectofinalservlet.service;
 
 import com.ipc2.proyectofinalservlet.data.ApplicantDB;
-import com.ipc2.proyectofinalservlet.model.Applicant.EntrevistaOferta;
-import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
+import com.ipc2.proyectofinalservlet.model.Applicant.*;
 import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.util.List;
 
 public class ApplicantService {
@@ -20,6 +21,12 @@ public class ApplicantService {
     public void completarInformacion(String curriculum, int usuario){
         System.out.println("Completar Informacion");
         applicantDB.completarInformacion(curriculum,usuario);
+
+    }
+
+    public void guardarPfs(int usuario, InputStream inputStream){
+        System.out.println("guardar pdf ");
+        applicantDB.guardarPdf( usuario, inputStream);
 
     }
 
@@ -45,14 +52,43 @@ public class ApplicantService {
 
     }
 
-    public List<OfertasEmpresa> listarOfeta(){
+    public List<OfertasEmpresa> listarOfeta(int usuarion){
         System.out.println("Listar Ofertas");
-        return applicantDB.listarOfertas();
+        return applicantDB.listarOfertas(usuarion);
     }
 
-    public Ofertas listarOfetaCodigo(int codigo){
+    public OfertasEmpresa listarOfetaCodigo(int codigo, int usuarion){
         System.out.println("Listar Oferta Codigo");
-        return applicantDB.listarOfertasCodigo(codigo);
+        return applicantDB.listarOfertasCodigo(codigo, usuarion);
+    }
+    public OfertasEmpresa listarOfetaCodigoSinEntrevista(int codigo, int usuarion){
+        System.out.println("Listar Oferta Codigo sin e");
+        return applicantDB.listarOfertasCodigoSinEntrevista(codigo, usuarion);
+    }
+
+    public List<OfertasEmpresa> lisatarOfertaNombre(String nombre, int usuario) {
+        System.out.println("Listar Oferta Nombre");
+        return applicantDB.listarOfertasNombre(nombre, usuario);
+    }
+
+    public List<Salario> listarSalarios() {
+        System.out.println("Listar Salarios");
+        return applicantDB.listarSalarios();
+    }
+
+    public List<OfertasEmpresa> listarOfertasFiltrados(Filtros filtros, int codigo) {
+        System.out.println("Listar Ofertas Filtrados");
+        return applicantDB.listarOfertasFiltros(filtros, codigo);
+    }
+
+    public List<OfertasEmpresa> listarOfertasSugerencia(int codigo){
+        System.out.println("Listar Ofertas Sugerencia");
+        return applicantDB.listarOfertasSugerencia(applicantDB.listarCategoriasusuario(codigo),codigo);
+    }
+
+    public List<Ubicacion> listarUbicaciones() {
+        System.out.println("Listar Ubicaciones");
+        return applicantDB.listarUbicaciones();
     }
 
     public List<OfertasEmpresaFecha> listarOfertasFecha(int usuario,String estado, String fechaA, String fechaB){
@@ -93,5 +129,9 @@ public class ApplicantService {
         applicantDB.registroPostulaciones(usuario, oferta,fecha);
     }
 
+    public UsuarioPdf listarCurriculum(int usuario){
+        System.out.println("Registrar Postulacion");
+        return applicantDB.visualizarPdf(usuario);
+    }
 
 }

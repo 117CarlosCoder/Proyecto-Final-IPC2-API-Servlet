@@ -141,6 +141,25 @@ public class AdminDB {
         return cantidadTotal;
     }
 
+    public CantidadTotal ofertaTotal(){
+        String query = "SELECT SUM(c.cantidad) AS cantidadTotal, g.nombre AS categoria FROM cobros c INNER JOIN categoria g ON g.codigo = c.categoria GROUP BY g.nombre";
+        CantidadTotal cantidadTotal = null;
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var cantidad = resultSet.getInt("cantidadTotal");
+                    var categoria = resultSet.getString("categoria");
+                    cantidadTotal = new CantidadTotal(cantidad, categoria);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar cantidad Total: " + e);
+        }
+
+        return cantidadTotal;
+    }
+
     public List<IngresoTotal> ingresoTotalFecha(String fechaA, String fechaB){
         String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cantidad) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobros s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
         List<IngresoTotal> ingresoTotals = new ArrayList<>();
@@ -170,6 +189,30 @@ public class AdminDB {
         return ingresoTotals;
     }
 
+    public List<IngresoTotal> ingresoTotalSinFecha(String fechaA, String fechaB){
+        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cantidad) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobros s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
+        List<IngresoTotal> ingresoTotals = new ArrayList<>();
+        IngresoTotal ingresoTotal = null;
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var cantidadOfertas = resultSet.getInt("cantidadOfertas");
+                    var total = resultSet.getBigDecimal("total");
+                    ingresoTotal = new IngresoTotal(codigo,nombre,cantidadOfertas,total);
+                    ingresoTotals.add(ingresoTotal);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar ingreso Total: " + e);
+        }
+
+        return ingresoTotals;
+    }
+
+
     public List<TopEmpleadores> top5EmpleadoresMasOfertas(){
         String query = "SELECT u.codigo, u.nombre, COUNT(*) AS cantidad FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa GROUP BY u.codigo, u.nombre ORDER BY cantidad DESC LIMIT 5";
         List<TopEmpleadores> empleadores = new ArrayList<>();
@@ -197,7 +240,7 @@ public class AdminDB {
             ResultSet resultset = select.executeQuery();
             while (resultset.next()) {
                 var codigo = resultset.getInt("codigo");
-                var cantidad = resultset.getInt("cantidad");
+                var cantidad = resultset.getBigDecimal("cantidad");
                 comision = new Comision(codigo,cantidad);
             }
 
