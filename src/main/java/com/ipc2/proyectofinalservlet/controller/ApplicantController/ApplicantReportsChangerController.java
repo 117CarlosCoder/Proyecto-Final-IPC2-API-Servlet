@@ -2,11 +2,13 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Applicant.EntrevistaOferta;
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.OfertasEmpresaFecha;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,15 +26,29 @@ import java.util.List;
 public class ApplicantReportsChangerController extends HttpServlet {
 
     private ApplicantService applicantService;
+    private UserService userService ;
+    private String username;
+    private String password;
+    private User user;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        System.out.println("sesion: "+ session);
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
 
-        System.out.println(conexion);
-        User user = (User) session.getAttribute("user");
-        System.out.println(user);
+        String authorizationHeader = req.getHeader("Authorization");
+
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Solicitante")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
         String uri = req.getRequestURI();
 
         if(uri.endsWith("/listar-entrevistas-info")) {

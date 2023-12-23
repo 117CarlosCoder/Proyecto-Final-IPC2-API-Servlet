@@ -2,10 +2,12 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,14 +29,29 @@ import java.util.List;
 public class ApplicantInterviewController extends HttpServlet {
 
     private ApplicantService applicantService;
+    private UserService userService ;
+    private String username;
+    private String password;
+    private User user;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
 
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        String authorizationHeader = req.getHeader("Authorization");
 
-        User user = (User) session.getAttribute("user");
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Solicitante")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         String uri = req.getRequestURI();
 
@@ -47,27 +64,7 @@ public class ApplicantInterviewController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
-        if(uri.endsWith("/listar-curriculum")) {
-            int codigo = Integer.parseInt(req.getParameter("codigo"));
-            UsuarioPdf usuarioPdf = listarCurriculum(conexion,codigo);
-            System.out.println("usuario :" + codigo);
-            try (OutputStream out = resp.getOutputStream()) {
-                // Convierte los bytes del Blob a un InputStream
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(usuarioPdf.getPdfBytes());
 
-                // Copia el contenido del InputStream al OutputStream de la respuesta
-                IOUtils.copy(inputStream, out);
-                System.out.println("Salida : " + out);
-            } catch (IOException e) {
-                throw new ServletException("Error al enviar el PDF al cliente", e);
-            }
-            /*ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), usuarioPdf);*/
-            System.out.println("Pdf : "+ usuarioPdf);
-            resp.setContentType("application/pdf");
-            resp.setStatus(HttpServletResponse.SC_OK);
-        }
 
         if(uri.endsWith("/listar-oferta-postulacion")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));

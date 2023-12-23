@@ -59,6 +59,38 @@ public class AdminDB {
         }
     }
 
+    public void crearTelefonosUsuario( TelefonosUsuario telefonos){
+        System.out.println(telefonos);
+        String query = "INSERT INTO telefonos VALUES(NULL,?,?)";
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, listarCodigo(telefonos.getUsername()));
+            preparedStatement.setInt(2, telefonos.getNumero());
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public int listarCodigo(String username){
+        String query = "SELECT u.codigo FROM usuarios u WHERE username = ?";
+        int codigo = 0;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, username);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    codigo = resultSet.getInt("codigo");
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuario: " + e);
+        }
+        return codigo;
+    }
+
     public List<RegistroComision> listarRegistroComision(){
         String query = "SELECT * FROM historialComision";
         List<RegistroComision> registroComisions = new ArrayList<>();
@@ -402,6 +434,7 @@ public class AdminDB {
         }catch (SQLException e) {
             System.out.println("Error al listar usuarios: " + e);
         }
+        System.out.println("Listar usuario : " +usuario );
         return usuario;
     }
 

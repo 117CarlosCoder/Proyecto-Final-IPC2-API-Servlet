@@ -2,6 +2,8 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.User.User;
+import com.ipc2.proyectofinalservlet.service.ApplicantService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,19 +17,40 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
 
 @WebServlet(name = "ApplicantReportsServlet", urlPatterns = {"/v1/applicant-reports-servlet/*"})
 public class AplicantReports extends HttpServlet {
 
+    private ApplicantService applicantService;
+    private UserService userService ;
+    private String username;
+    private String password;
+    private User user;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String resources = "/home/carlos/Documentos/ipc2/Proyecto-Final-IPC2-API-Servlet/src/main/webapp/reportes/Aplicant/";
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        User user = (User) session.getAttribute("user");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
+
+        String authorizationHeader = req.getHeader("Authorization");
+
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Solicitante")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         String uri = req.getRequestURI();
+
         String reporte = "";
         Map<String, Object> params = new HashMap<>();
 

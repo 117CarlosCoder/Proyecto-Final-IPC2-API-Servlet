@@ -41,9 +41,19 @@ public class AdminService {
         return adminDB.cambiarCategoria(codigo,nombre,descripcion);
     }
 
-    public void actualizarTelefono(NumTelefono telefono){
+    public void actualizarTelefono(List<NumTelefono> telefono){
         System.out.println("Actualizar Telefonos");
-        adminDB.actualizarTelefonos(telefono);
+        adminDB.actualizarTelefonos(telefono.get(0));
+        if (telefono.size() > 1) {
+            if ((telefono.get(1)) != null) {
+                adminDB.actualizarTelefonos(telefono.get(1));
+            }
+            if (telefono.size() > 2) {
+                if ((telefono.get(2)) != null) {
+                    adminDB.actualizarTelefonos(telefono.get(2));
+                }
+            }
+        }
     }
 
     public Categoria listarCategoriaCodigo(int codigo){
@@ -103,10 +113,43 @@ public class AdminService {
         adminDB.actualizarUsuario(usuario);
     }
 
-    public void crearTelefonos( NumTelefono telefonos){
+    public void crearTelefonos( List<NumTelefono> numTelefonos){
         System.out.println("Crear Telefonos");
-        adminDB.crearTelefonos(telefonos);
+        if (numTelefonos.size() > 0) {
+            adminDB.crearTelefonos(numTelefonos.get(0));
+
+            if (numTelefonos.size() > 1) {
+                if ((numTelefonos.get(1)) != null) {
+                    adminDB.crearTelefonos(numTelefonos.get(1));
+                }
+                if (numTelefonos.size() > 2) {
+                    if ((numTelefonos.get(2)) != null) {
+                        adminDB.crearTelefonos(numTelefonos.get(2));
+                    }
+                }
+            }
+        }
     }
+
+    public void crearTelefonosUsarioP2( List<TelefonosUsuario> numTelefonos){
+        System.out.println("Crear Telefonos");
+        if (numTelefonos.size() > 0) {
+            adminDB.crearTelefonosUsuario(numTelefonos.get(0));
+
+            if (numTelefonos.size() > 1) {
+                if ((numTelefonos.get(1)) != null) {
+                    adminDB.crearTelefonosUsuario(numTelefonos.get(1));
+                }
+                if (numTelefonos.size() > 2) {
+                    if ((numTelefonos.get(2)) != null) {
+                        adminDB.crearTelefonosUsuario(numTelefonos.get(2));
+                    }
+                }
+            }
+        }
+    }
+
+
 
     public void eliminarCategoria(int codigo){
         System.out.println("Eliminar categoria");

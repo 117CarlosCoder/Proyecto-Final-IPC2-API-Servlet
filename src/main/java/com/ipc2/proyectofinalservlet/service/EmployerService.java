@@ -58,6 +58,11 @@ public class EmployerService {
         return employerDB.listarOfertasEmpresa(empresa);
     }
 
+    public List<Ofertas> listarOfertasEmpresaFecha(java.sql.Date fechaA, java.sql.Date fechaB){
+        System.out.println("listar ofertas Empresa");
+        return employerDB.listarOfertasEmpresaFecha(fechaA, fechaB);
+    }
+
     public List<Ofertas> listarOfertasEmpresaPos(int empresa){
         System.out.println("listar ofertas Empresa");
         return employerDB.listarOfertasEmpresaPostulaciones(empresa);

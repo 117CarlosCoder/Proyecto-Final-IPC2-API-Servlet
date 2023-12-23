@@ -4,6 +4,7 @@ import com.ipc2.proyectofinalservlet.data.SesionDB;
 import com.ipc2.proyectofinalservlet.data.UserDB;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
+import jakarta.servlet.http.HttpServletResponse;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -13,12 +14,14 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 
 public class UserService  {
     private final UserDB usuarioDB;
+    private SesionService sesionService;
 
     public UserService(Connection conexion){
         this.usuarioDB = new UserDB(conexion);
@@ -50,12 +53,22 @@ public class UserService  {
     }
 
 
-    public void crearUsuarioEmpleador(User user,boolean valor) {
+    public void crearUsuarioEmpleador(User user) {
         System.out.println("Crer Usuario");
-        if (valor){
-            usuarioDB.crearUsuariOEmpleadorAdmin(user);
+        boolean valor = false;
+        if (user.getRol().equals("Empleador")){
+            valor=true;
+            if (valor){
+                usuarioDB.crearUsuariOEmpleadorAdmin(user);
+            }
         }
-        else {
+        if (user.getRol().equals("Solicitante")){
+            valor=true;
+            if (valor){
+                usuarioDB.crearUsuarioSolicitanteAdmin(user);
+            }
+        }
+        if(!valor) {
             String contreseña = generarContraseña(8);
             usuarioDB.crearUsuariOEmpleador(user, contreseña);
             enviarConGMail(user.getEmail(), "EmpleoGt", "Hola Bienvenido a EmpleoGT esta es su contraseña : " + contreseña);
@@ -110,5 +123,31 @@ public class UserService  {
             contraseña.append(caracteres[random.nextInt(caracteres.length)]);
         }
         return contraseña.toString();
+    }
+
+    public User validarUsuario(Connection conexion,String username, String password, String email) {
+        System.out.println("validar : ");
+        sesionService = new SesionService(conexion);
+        return sesionService.obtenerUsuario(username, password, email);
+    }
+
+    public String[] autorizacion(String authorizationHeader, HttpServletResponse resp) {
+        String[] parts = {};
+        if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
+            String base64Credentials = authorizationHeader.substring("Basic ".length()).trim();
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+            parts = credentials.split(":", 2);
+            return  parts;
+            //username = parts[0];
+            //password = parts[1];
+            //System.out.println("Username: " + username);
+            //System.out.println("Password: " + password);
+        }
+        else {
+            System.out.println("Usuario no aceptado");
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return parts;
+        }
+
     }
 }

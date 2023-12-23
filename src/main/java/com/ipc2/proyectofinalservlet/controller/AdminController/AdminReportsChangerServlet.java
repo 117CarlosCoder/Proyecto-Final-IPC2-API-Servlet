@@ -2,12 +2,15 @@ package com.ipc2.proyectofinalservlet.controller.AdminController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Admin.CantidadTotal;
 import com.ipc2.proyectofinalservlet.model.Admin.IngresoTotal;
 import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.Admin.TopEmpleadores;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.AdminService;
+import com.ipc2.proyectofinalservlet.service.SesionService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,19 +22,35 @@ import org.apache.http.entity.ContentType;
 import java.awt.*;
 import java.io.IOException;
 import java.sql.Connection;
+import java.util.Base64;
 import java.util.List;
 
 @WebServlet(name = "AdminManagerReportsServlet", urlPatterns = {"/v1/admin-report-changer-servlet/*"})
 public class AdminReportsChangerServlet extends HttpServlet {
     private AdminService adminService;
-
+    private SesionService sesionService;
+    private UserService userService;
+    private String username;
+    private String password;
+    private User user;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
+        String authorizationHeader = req.getHeader("Authorization");
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Administrador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         String uri = req.getRequestURI();
-        User user = (User) session.getAttribute("user");
 
         if (uri.endsWith("/listar-top-empleadores")) {
             List<TopEmpleadores> topEmpleadores = topEmpleadores(conexion);

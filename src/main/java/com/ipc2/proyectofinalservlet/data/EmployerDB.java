@@ -221,6 +221,42 @@ public class EmployerDB {
         return ofertas;
     }
 
+    public List<Ofertas> listarOfertasEmpresaFecha(java.sql.Date FechaA, java.sql.Date FechaB) {
+        String query = "SELECT * FROM ofertas WHERE fechaLimite BETWEEN ? AND ?";
+        List<Ofertas> ofertas = new ArrayList<>();
+        Ofertas oferta = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setDate(1, FechaA);
+            preparedStatement.setDate(2, FechaB);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var descripcion = resultSet.getString("descripcion");
+                    var empresa = resultSet.getInt("empresa");
+                    var categoria = resultSet.getInt("categoria");
+                    var estado = resultSet.getString("estado");
+                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
+                    var fechaLimite = resultSet.getDate("fechaLimite");
+                    var salario = resultSet.getBigDecimal("salario");
+                    var modalidad = resultSet.getString("salario");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var detalles = resultSet.getString("detalles");
+                    var usuarioElegido = resultSet.getInt("usuarioElegido");
+                    oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
+                    ofertas.add(oferta);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al listar oferta de empresa: " + e);
+        }
+
+        return ofertas;
+    }
+
     public List<Ofertas> listarOfertasEmpresaPostulaciones(int numEmpresa) {
         String query = "SELECT * FROM ofertas WHERE empresa = ? AND estado = 'ACTIVA' OR empresa = ? AND estado = 'SELECCION' OR empresa = ? AND estado = 'ENTREVISTA'";
         List<Ofertas> ofertas = new ArrayList<>();

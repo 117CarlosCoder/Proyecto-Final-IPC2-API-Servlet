@@ -1,39 +1,33 @@
 package com.ipc2.proyectofinalservlet.controller.AdminController;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.ipc2.proyectofinalservlet.data.AdminDB;
-import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Admin.Dashboard;
 import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
+import com.ipc2.proyectofinalservlet.model.Admin.TelefonosUsuario;
+import com.ipc2.proyectofinalservlet.model.Admin.UsuarioCreacion;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
 import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
-import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
-import com.ipc2.proyectofinalservlet.model.User.login;
 import com.ipc2.proyectofinalservlet.service.AdminService;
 import com.ipc2.proyectofinalservlet.service.CargarDatosService;
-import com.ipc2.proyectofinalservlet.service.SesionService;
 import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.util.Base64;
 import java.util.List;
 
 @WebServlet(name = "AdminManagerServlet", urlPatterns = {"/v1/admin-servlet/*"})
@@ -41,11 +35,9 @@ public class AdminController extends HttpServlet {
 
     private CargarDatosService cargarDatosService;
     private AdminService adminService;
-    private SesionService sesionService;
-    private UserService userService;
+    private UserService userService ;
     private String username;
     private String password;
-
     private User user;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -54,9 +46,14 @@ public class AdminController extends HttpServlet {
         Connection conexion = conectar.obtenerConexion();
 
         String authorizationHeader = req.getHeader("Authorization");
-        autorizacion(authorizationHeader,resp);
 
-        user = validarUsuario(conexion,username,password,username);
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
         if (!user.getRol().equals("Administrador")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
@@ -92,35 +89,23 @@ public class AdminController extends HttpServlet {
         if (uri.endsWith("/listar-usuario")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
             Usuarios usuario = listarUsuario(conexion,codigo);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), usuario);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,usuario);
         }
 
         if (uri.endsWith("/listar-usuario-especifico")) {
             Usuarios usuario = listarUsuario(conexion, user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), usuario);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,usuario);
         }
 
         if (uri.endsWith("/listar-telefonos")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
             List<NumTelefono> telefonos = listarTelefonos(conexion,codigo);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), telefonos);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,telefonos);
         }
 
         if (uri.endsWith("/listar-telefonos-usuario-especifico")) {
             List<NumTelefono> telefonos = listarTelefonos(conexion, user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), telefonos);
-            resp.setStatus(HttpServletResponse.SC_OK);
+            enviarJson(resp,telefonos);
         }
 
 
@@ -130,44 +115,49 @@ public class AdminController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
-        HttpSession session = req.getSession(true);
-        login credenciales = (login) leerJson(resp,req,login.class);
 
-        user = validarUsuario(conexion,credenciales.getUsername(),credenciales.getPassword(),credenciales.getUsername());
+        String authorizationHeader = req.getHeader("Authorization");
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+        user = userService.validarUsuario(conexion,username,password,username);
         if (!user.getRol().equals("Administrador")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
         }
 
-
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/gestionar-categorias-crear")) {
-            Categoria categoria = readJsonCategoria(resp,req,conexion);
-            crearCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+            Categoria categoria = (Categoria) leerJson(resp,req,Categoria.class);
+            crearCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion());
         }
         if (uri.endsWith("/crear-registro-comision")) {
-
-            RegistroComision registroComision = readJsonRegistroComision(resp,req);
-            registrarComision(conexion,registroComision.getComision(),registroComision.getFecha());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-
+            RegistroComision registroComision = (RegistroComision) leerJson(resp,req,RegistroComision.class);
+            registrarComision(conexion,registroComision.getComision(),registroComision.getFecha());
         }
 
         if (uri.endsWith("/crear-usuarios")) {
-
-            User usuario = readJsonUsuario(resp,req);
-            session.setAttribute("usuario",usuario);
-            crearUsuario(conexion,usuario);
             resp.setStatus(HttpServletResponse.SC_CREATED);
+            UsuarioCreacion usuario = (UsuarioCreacion) leerJson(resp,req, UsuarioCreacion.class);
+            crearUsuario(conexion,usuario.getUsuario());
+            crearTelefonosUser(conexion,usuario.getUsuario(),usuario.getTelefonos());
 
         }
 
         if (uri.endsWith("/crear-telefonos")) {
-
             List<NumTelefono> telefono = readJsonTelefonos(resp,req);
             crearTelefonos(conexion,telefono);
+
+        }
+
+        if (uri.endsWith("/crear-telefonos-usuario")) {
+            List<TelefonosUsuario> telefono = readJsonTelefonosUsuario(resp,req);
+            crearTelefonosUsarioP2(conexion,telefono);
 
         }
     }
@@ -176,10 +166,15 @@ public class AdminController extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
-        HttpSession session = req.getSession(true);
-        login credenciales = (login) leerJson(resp,req,login.class);
 
-        user = validarUsuario(conexion,credenciales.getUsername(),credenciales.getPassword(),credenciales.getUsername());
+        String authorizationHeader = req.getHeader("Authorization");
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
         if (!user.getRol().equals("Administrador")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
@@ -189,36 +184,27 @@ public class AdminController extends HttpServlet {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/gestionar-categorias-actualizar")) {
-            Categoria categoria = readJsonCategoria(resp,req,conexion);
-            actualizarCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+            Categoria categoria = (Categoria) leerJson(resp,req,Categoria.class);
+            actualizarCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion());
         }
 
         if (uri.endsWith("/actualizar-comision")) {
-
-            Comision comision = readJson(resp,req,conexion);
-            System.out.println("Comision : "+comision);
-            actualizarComision(conexion,comision.getCantidad());
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+            Comision comision = (Comision) leerJson(resp,req, Comision.class);
+            actualizarComision(conexion,comision.getCantidad());
         }
 
         if (uri.endsWith("/actualizar-usuario")) {
-
-            User usuario = readJsonUsuario(resp,req);
-            session.setAttribute("usuario",usuario);
-            System.out.println("usuario act: "+ usuario);
-            actualizarUsuario(conexion,usuario);
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-
+            User usuario = (User) leerJson(resp,req,User.class);
+            actualizarUsuario(conexion,usuario);
         }
 
         if (uri.endsWith("/actualizar-telefonos")) {
-
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
             List<NumTelefono> telefonos = readJsonTelefonos(resp,req);
             actualizarTelefono(conexion,telefonos);
-            System.out.println("usuario act: "+ telefonos);
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-
         }
 
 
@@ -226,14 +212,19 @@ public class AdminController extends HttpServlet {
 
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
-        HttpSession session = req.getSession(true);
-        login credenciales = (login) leerJson(resp,req,login.class);
 
-        user = validarUsuario(conexion,credenciales.getUsername(),credenciales.getPassword(),credenciales.getUsername());
-        if (user.getRol().equals("Administrador")) {
+        String authorizationHeader = req.getHeader("Authorization");
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Administrador")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
         }
@@ -241,23 +232,20 @@ public class AdminController extends HttpServlet {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/eliminar-usuario")) {
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
             String username = req.getParameter("username");
             eliminarUsuario(conexion, username);
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-
         }
 
         if (uri.endsWith("/eliminar-categoria")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
-            eliminarCategoria(conexion, codigo);
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-
+            eliminarCategoria(conexion, codigo);
         }
 
     }
 
     public void actualizarComision(Connection conexion, BigDecimal cantidad){
-        System.out.println("Nueva comision: "+ cantidad);
         cargarDatosService = new CargarDatosService(conexion);
         cargarDatosService.actualizarComision(cantidad);
     }
@@ -269,32 +257,35 @@ public class AdminController extends HttpServlet {
 
     public void crearTelefonos(Connection conexion,List<NumTelefono> numTelefonos){
         adminService = new AdminService(conexion);
-        System.out.println(numTelefonos);
-        if (numTelefonos.size() > 0) {
-            adminService.crearTelefonos(numTelefonos.get(0));
+        adminService.crearTelefonos(numTelefonos);
 
-            if (numTelefonos.size() > 1) {
-                if ((numTelefonos.get(1)) != null) {
-                    adminService.crearTelefonos(numTelefonos.get(1));
-                }
-                if (numTelefonos.size() > 2) {
-                    if ((numTelefonos.get(2)) != null) {
-                        adminService.crearTelefonos(numTelefonos.get(2));
-                    }
-                }
-            }
+    }
+
+    public void crearTelefonosUsarioP2(Connection conexion,List<TelefonosUsuario> numTelefonos){
+        adminService = new AdminService(conexion);
+        adminService.crearTelefonosUsarioP2(numTelefonos);
+    }
+
+    private void crearTelefonosUser(Connection conexion, User user, Telefono telefono){
+        System.out.println("CrearTelefono");
+        userService = new UserService(conexion);
+        if ((telefono.getTelefono1() != null)){
+            userService.crearTelefono(telefono.getTelefono1(), user);
         }
+        if ((telefono.getTelefono2() != null)){
+            userService.crearTelefono(telefono.getTelefono2(),user);
+        }
+        if ((telefono.getTelefono3() != null)){
+            userService.crearTelefono(telefono.getTelefono3(),user);
+        }
+
 
     }
 
     private void crearUsuario(Connection conexion, User user){
         userService = new UserService(conexion);
-        if (user.getRol().equals("Empleador")){
-            userService.crearUsuarioEmpleador(user,true);
-        }
-        if (user.getRol().equals("Solicitante")){
-            userService.crearUsuarioSolicitante(user,true);
-        }
+        System.out.println("Usuario : " + user);
+        userService.crearUsuarioEmpleador(user);
 
     }
 
@@ -345,17 +336,8 @@ public class AdminController extends HttpServlet {
 
     public  void actualizarTelefono(Connection conexion, List<NumTelefono> telefono  ){
         adminService = new AdminService(conexion);
-        adminService.actualizarTelefono(telefono.get(0));
-        if (telefono.size() > 1) {
-            if ((telefono.get(1)) != null) {
-                adminService.actualizarTelefono(telefono.get(1));
-            }
-            if (telefono.size() > 2) {
-                if ((telefono.get(2)) != null) {
-                    adminService.actualizarTelefono(telefono.get(2));
-                }
-            }
-        }
+        adminService.actualizarTelefono(telefono);
+
     }
     private void actualizarUsuario(Connection conexion, User usuario) {
         adminService = new AdminService(conexion);
@@ -373,21 +355,6 @@ public class AdminController extends HttpServlet {
         adminService.eliminarCategoria(codigo);
     }
 
-    public Comision readJson(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        Comision comision = objectMapper.readValue(req.getInputStream(), Comision.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return comision;
-    }
-
-    public RegistroComision readJsonRegistroComision(HttpServletResponse resp, HttpServletRequest req ) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        RegistroComision registroComision = objectMapper.readValue(req.getInputStream(), RegistroComision.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return registroComision;
-    }
-
-
     private List<NumTelefono> readJsonTelefonos(HttpServletResponse resp, HttpServletRequest req) throws IOException {
         Gson gson = new Gson();
         try (Reader reader = req.getReader()) {
@@ -398,18 +365,16 @@ public class AdminController extends HttpServlet {
             throw new IOException("Error al procesar la solicitud JSON", e);
         }
     }
-    private User readJsonUsuario(HttpServletResponse resp, HttpServletRequest req) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        User user = objectMapper.readValue(req.getInputStream(), User.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return user;
-    }
 
-    public Categoria readJsonCategoria(HttpServletResponse resp, HttpServletRequest req , Connection conexion) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        Categoria categoria = objectMapper.readValue(req.getInputStream(), Categoria.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return categoria;
+    private List<TelefonosUsuario> readJsonTelefonosUsuario(HttpServletResponse resp, HttpServletRequest req) throws IOException {
+        Gson gson = new Gson();
+        try (Reader reader = req.getReader()) {
+            List<TelefonosUsuario> numTelefonos = gson.fromJson(reader, new TypeToken<List<TelefonosUsuario>>() {}.getType());
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            return numTelefonos;
+        } catch (IOException e) {
+            throw new IOException("Error al procesar la solicitud JSON", e);
+        }
     }
 
     public Object leerJson(HttpServletResponse resp, HttpServletRequest req , Class clase) throws IOException {
@@ -426,25 +391,4 @@ public class AdminController extends HttpServlet {
 
     }
 
-    public User validarUsuario(Connection conexion,String username, String password, String email) {
-        System.out.println("validar : ");
-        sesionService = new SesionService(conexion);
-        return sesionService.obtenerUsuario(username, password, email);
-    }
-
-    public void autorizacion(String authorizationHeader, HttpServletResponse resp) {
-        if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
-            String base64Credentials = authorizationHeader.substring("Basic ".length()).trim();
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
-            String[] parts = credentials.split(":", 2);
-            username = parts[0];
-            password = parts[1];
-            System.out.println("Username: " + username);
-            System.out.println("Password: " + password);
-        }
-        else {
-            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
-        }
-
-    }
 }

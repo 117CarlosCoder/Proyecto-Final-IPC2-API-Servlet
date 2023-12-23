@@ -195,7 +195,7 @@ public class ApplicantDB    {
     }
 
     public List<OfertasEmpresa> listarOfertasSugerencia(List<CategoriaUsuario> categoriaUsuarios, int codigon) {
-        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta AND u.usuario = ? WHERE s.fechaLimite >= CURDATE() AND u.codigoOferta IS NULL AND s.estado IN ('ENTREVISTA','ACTIVA') AND s.usuarioElegido = 0";
+        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta AND u.usuario = ? WHERE s.fechaLimite >= CURDATE() AND u.codigoOferta IS NULL AND s.estado IN ('ENTREVISTA','ACTIVA') AND s.usuarioElegido = 0 ";
         List<OfertasEmpresa> ofertas = new ArrayList<>();
         OfertasEmpresa oferta = null;
         for (int i =0 ; i < categoriaUsuarios.size(); i++ ) {

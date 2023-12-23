@@ -3,9 +3,11 @@ package com.ipc2.proyectofinalservlet.controller.EmployerController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.HelloServlet;
+import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.EmployerService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,13 +27,29 @@ import java.util.List;
 
 public class NominationController extends HelloServlet {
     private EmployerService employerService;
+    private UserService userService;
+
+    private User user;
+    private String username;
+    private String password;
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
 
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        String authorizationHeader = req.getHeader("Authorization");
 
-        User user = (User) session.getAttribute("user");
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Empleador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         String uri = req.getRequestURI();
 
@@ -52,9 +70,23 @@ public class NominationController extends HelloServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
 
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        String authorizationHeader = req.getHeader("Authorization");
+
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Empleador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
         int codigo = 0;
         if (req.getParameter("codigo")!=null){
              codigo = Integer.parseInt(req.getParameter("codigo"));
@@ -67,6 +99,7 @@ public class NominationController extends HelloServlet {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/cargar-postulantes")) {
+            System.out.println(codigo);
             List<EstadoSolicitudPostulante> solicitudes = listarPostulantes(conexion,codigo);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
             objectMapper.writeValue(resp.getWriter(), solicitudes);
@@ -76,13 +109,12 @@ public class NominationController extends HelloServlet {
         if (uri.endsWith("/obtener-postulante")) {
             Postulante postulante = obtenerPostulante(conexion,codigo, oferta);
             ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            session.setAttribute("postulante",postulante);
             objectMapper.writeValue(resp.getWriter(), postulante);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/generar-entrevista")) {
-            Postulante postulante = (Postulante) session.getAttribute("postulante");
+            Postulante postulante =obtenerPostulante(conexion,codigo, oferta); ;
             Entrevista entrevista = readJsonEntrevista(resp,req);
             generarEntrevista(conexion,postulante.getCodigo(),postulante.getCodigoOferta(),postulante.getCodigo(),entrevista.getFecha(),entrevista.getHora(),entrevista.getUbicacion());
             actualizarOfertaEstado(conexion,entrevista.getCodigoOferta());
@@ -96,9 +128,22 @@ public class NominationController extends HelloServlet {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        HttpSession session = (HttpSession) getServletContext().getAttribute("userSession");
+        Conexion conectar = new Conexion();
+        Connection conexion = conectar.obtenerConexion();
 
-        Connection conexion = (Connection) session.getAttribute("conexion");
+        String authorizationHeader = req.getHeader("Authorization");
+
+        userService = new UserService(conexion);
+        String[] parts = userService.autorizacion(authorizationHeader,resp);
+        username = parts[0];
+        password = parts[1];
+
+
+        user = userService.validarUsuario(conexion,username,password,username);
+        if (!user.getRol().equals("Empleador")) {
+            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         int codigo = 0;
         if (req.getParameter("codigo")!=null){
@@ -164,6 +209,8 @@ public class NominationController extends HelloServlet {
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
         return entrevista;
     }
+
+
 
 
 }

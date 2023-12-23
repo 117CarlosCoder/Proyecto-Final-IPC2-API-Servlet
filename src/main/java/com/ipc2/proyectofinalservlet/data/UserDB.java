@@ -159,6 +159,27 @@ public class UserDB {
         }
     }
 
+    public void crearUsuariOSolicitanteAdmin(User user) {
+        System.out.println("creando usuario");
+        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL)";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, user.getNombre());
+            preparedStatement.setString(2, user.getDireccion());
+            preparedStatement.setString(3, user.getUsername());
+            preparedStatement.setString(4, user.getPassword());
+            preparedStatement.setString(5, user.getEmail());
+            preparedStatement.setString(6, user.getCUI());
+            preparedStatement.setDate(7, user.getFechaNacimiento());
+            preparedStatement.setString(8, user.getRol());
+
+            preparedStatement.executeUpdate();
+        }catch (SQLException e) {
+            System.out.println("Error al consultar: " + e);
+        }
+    }
+
     public void restablecerContraseña(String email, String password) {
         System.out.println("creando usuario");
         String query = "UPDATE usuarios SET password = ? WHERE email = ?";
