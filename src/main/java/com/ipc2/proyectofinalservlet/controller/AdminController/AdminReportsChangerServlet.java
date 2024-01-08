@@ -1,7 +1,5 @@
 package com.ipc2.proyectofinalservlet.controller.AdminController;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Admin.CantidadTotal;
 import com.ipc2.proyectofinalservlet.model.Admin.IngresoTotal;
@@ -9,62 +7,54 @@ import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.Admin.TopEmpleadores;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.AdminService;
-import com.ipc2.proyectofinalservlet.service.SesionService;
 import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import org.apache.http.entity.ContentType;
 
-import java.awt.*;
 import java.io.IOException;
 import java.sql.Connection;
-import java.util.Base64;
 import java.util.List;
 
 @WebServlet(name = "AdminManagerReportsServlet", urlPatterns = {"/v1/admin-report-changer-servlet/*"})
 public class AdminReportsChangerServlet extends HttpServlet {
     private AdminService adminService;
-    private SesionService sesionService;
-    private UserService userService;
-    private String username;
-    private String password;
-    private User user;
+    private String fechaA;
+    private String fechaB;
+    private int categoria;
+
+    private boolean valor;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
         String authorizationHeader = req.getHeader("Authorization");
-        userService = new UserService(conexion);
+        UserService userService = new UserService(conexion);
         String[] parts = userService.autorizacion(authorizationHeader,resp);
-        username = parts[0];
-        password = parts[1];
+        String username = parts[0];
+        String password = parts[1];
 
 
-        user = userService.validarUsuario(conexion,username,password,username);
+        User user = userService.validarUsuario(conexion, username, password, username);
         if (!user.getRol().equals("Administrador")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
         }
 
         String uri = req.getRequestURI();
+        obtenerParametros(req);
 
         if (uri.endsWith("/listar-top-empleadores")) {
             List<TopEmpleadores> topEmpleadores = topEmpleadores(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), topEmpleadores);
+            userService.enviarJson(resp, topEmpleadores);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/listar-cantidad-total")) {
-            String fechaA = req.getParameter("fechaA");
-            String fechaB = req.getParameter("fechaB");
-            int categoria = Integer.parseInt(req.getParameter("categoria"));
-            boolean valor = Boolean.parseBoolean(req.getParameter("valor"));
+            obtenerParametros(req);
             System.out.println("Valor : " + valor);
             CantidadTotal cantidadTotal = null;
             if (valor){
@@ -73,27 +63,21 @@ public class AdminReportsChangerServlet extends HttpServlet {
             else {
                 cantidadTotal = listarTotalSinFecha(conexion);
             }
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), cantidadTotal);
+
+            userService.enviarJson(resp, cantidadTotal);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/listar-registro-comision")) {
             List<RegistroComision> registroComisions = listarRegistroComision(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), registroComisions);
+            userService.enviarJson(resp,registroComisions);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if(uri.endsWith("/ingresos-fecha")) {
-            String fechaA = req.getParameter("fechaA");
-            String fechaB = req.getParameter("fechaB");
+            obtenerParametros(req);
             List<IngresoTotal> ingresoTotals= ingresosTotales(conexion,fechaA,fechaB);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), ingresoTotals);
+            userService.enviarJson(resp,ingresoTotals);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
     }
@@ -120,5 +104,17 @@ public class AdminReportsChangerServlet extends HttpServlet {
     public List<RegistroComision> listarRegistroComision(Connection conexion){
         adminService = new AdminService(conexion);
         return adminService.listarRegistroComision();
+    }
+
+    public void obtenerParametros(HttpServletRequest req){
+        fechaA = req.getParameter("fechaA");
+        fechaB = req.getParameter("fechaB");
+        try {
+            categoria = Integer.parseInt(req.getParameter("categoria"));
+        }catch (Exception e){
+            System.out.println(e);
+            categoria = 0;
+        }
+        valor = Boolean.parseBoolean(req.getParameter("valor"));
     }
 }

@@ -4,6 +4,7 @@ import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,7 +18,7 @@ public class UserDB {
         this.conexion = conexion;
     }
 
-    public void crearUsuarioSolicitante(User user, String contrasena) {
+    public void crearUsuarioSolicitante(User user, String contrasena, HttpServletResponse resp) {
         System.out.println("creando usuario");
         String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL)";
 
@@ -35,6 +36,8 @@ public class UserDB {
             preparedStatement.executeUpdate();
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+
         }
     }
 
@@ -180,7 +183,7 @@ public class UserDB {
         }
     }
 
-    public void restablecerContraseña(String email, String password) {
+    public void restablecerContrasena(String email, String password) {
         System.out.println("creando usuario");
         String query = "UPDATE usuarios SET password = ? WHERE email = ?";
 

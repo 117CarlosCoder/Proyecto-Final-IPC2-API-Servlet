@@ -17,6 +17,7 @@ public class Employer {
     private String direccion;
     private String username;
     private String password;
+    private String sal;
     private String email;
     private String CUI;
     private Date fechaFundacion;

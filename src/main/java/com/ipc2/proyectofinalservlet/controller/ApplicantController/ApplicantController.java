@@ -1,15 +1,10 @@
 package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Admin.TelefonosUsuario;
-import com.ipc2.proyectofinalservlet.model.Applicant.Filtros;
-import com.ipc2.proyectofinalservlet.model.Applicant.Salario;
-import com.ipc2.proyectofinalservlet.model.Applicant.Ubicacion;
-import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
+import com.ipc2.proyectofinalservlet.model.Applicant.*;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.Employer.Modalidades;
 import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
@@ -23,15 +18,16 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Reader;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
+import java.util.Arrays;
 import java.util.List;
 
 @WebServlet(name = "ApplicantManagerServlet", urlPatterns = {"/v1/applicant-servlet/*"})
@@ -41,7 +37,6 @@ public class ApplicantController extends HttpServlet{
     private String username;
     private String password;
     private User user;
-    private EmployerService employerService;
     private AdminService adminService;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -55,7 +50,7 @@ public class ApplicantController extends HttpServlet{
         username = parts[0];
         password = parts[1];
 
-        System.out.println(parts);
+        System.out.println(Arrays.toString(parts));
         user = userService.validarUsuario(conexion,username,password,username);
         if (!user.getRol().equals("Solicitante")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
@@ -66,66 +61,74 @@ public class ApplicantController extends HttpServlet{
 
         if(uri.endsWith("/listar-ofertas")) {
             List<OfertasEmpresa> ofertas = listarOfertasEmpleo(conexion, user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), ofertas);
+            userService.enviarJson(resp,ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if(uri.endsWith("/listar-ofertas-sugerencias")) {
             System.out.println("codigo : " + user.getCodigo());
             List<OfertasEmpresa> ofertas = listarOfertasSugerencia(conexion, user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), ofertas);
+            userService.enviarJson(resp,ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/listar-categorias")) {
             List<Categoria> categorias = listarCategorias(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), categorias);
+            userService.enviarJson(resp,categorias);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/listar-ubicaciones")) {
             List<Ubicacion> ubicaciones = listarUbicaciones(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), ubicaciones);
+            userService.enviarJson(resp,ubicaciones);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/listar-salarios")) {
             List<Salario> salarios = listarSalarios(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), salarios);
+            userService.enviarJson(resp,salarios);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
         if (uri.endsWith("/listar-modalidades")) {
             List<Modalidades> modalidad = listarModalidad(conexion);
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), modalidad);
+            userService.enviarJson(resp,modalidad);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/listar-usuario-especifico")) {
             Usuarios usuario = listarUsuario(conexion, user.getCodigo());
-            enviarJson(resp,usuario);
+            userService.enviarJson(resp,usuario);
         }
 
         if (uri.endsWith("/listar-telefonos-usuario-especifico")) {
             List<NumTelefono> telefonos = listarTelefonos(conexion, user.getCodigo());
-            enviarJson(resp,telefonos);
+            userService.enviarJson(resp,telefonos);
+        }
+
+        if(uri.endsWith("/listar-curriculum")) {
+            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            ApplicantService applicantService = new ApplicantService(conexion);
+            UsuarioPdf usuarioPdf = applicantService.listarCurriculum(codigo);
+            System.out.println("usuario :" + codigo);
+            try (OutputStream out = resp.getOutputStream()) {
+                // Convierte los bytes del Blob a un InputStream
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(usuarioPdf.getPdfBytes());
+
+                // Copia el contenido del InputStream al OutputStream de la respuesta
+                IOUtils.copy(inputStream, out);
+                System.out.println("Salida : " + out);
+            } catch (IOException e) {
+                throw new ServletException("Error al enviar el PDF al cliente", e);
+            }
+            System.out.println("Pdf : "+ usuarioPdf);
+            resp.setContentType("application/pdf");
+            resp.setStatus(HttpServletResponse.SC_OK);
         }
 
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
 
@@ -146,8 +149,10 @@ public class ApplicantController extends HttpServlet{
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/completar-informacion")) {
-                CompletarInformacionApplicant completarInformacionApplicant = readJson(resp, req);
-                completarInformacion(conexion, completarInformacionApplicant.getCurriculum(), user.getCodigo());
+                CompletarInformacionApplicant completarInformacionApplicant = (CompletarInformacionApplicant) userService.leerJson(resp, req, CompletarInformacionApplicant.class);
+                if (completarInformacionApplicant == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                assert completarInformacionApplicant != null;
+                    if (!completarInformacion(conexion, completarInformacionApplicant.getCurriculum(), user.getCodigo()))resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 for (Integer categoria : completarInformacionApplicant.getCategorias()) {
                     crearCategorias(conexion, user.getCodigo(), categoria);
                 }
@@ -155,34 +160,35 @@ public class ApplicantController extends HttpServlet{
         }
 
         if (uri.endsWith("/completar-informacion-tarjeta")) {
-            CompletarInformacionEmployerTarjeta completarInformacionEmployerTarjeta = readJsonTarjeta(resp, req);
-            completarInformacionTarjeta(conexion, user.getCodigo(), user.getCodigo(), completarInformacionEmployerTarjeta.getTitular(),completarInformacionEmployerTarjeta.getNumero(),completarInformacionEmployerTarjeta.getCodigoSeguridad(),completarInformacionEmployerTarjeta.getFechaExpiracion());
+            CompletarInformacionEmployerTarjeta completarInformacionEmployerTarjeta = (CompletarInformacionEmployerTarjeta) userService.leerJson(resp, req, CompletarInformacionEmployerTarjeta.class);
+            if (completarInformacionEmployerTarjeta == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (!completarInformacionTarjeta(conexion, user.getCodigo(), user.getCodigo(), completarInformacionEmployerTarjeta.getTitular(),completarInformacionEmployerTarjeta.getNumero(),completarInformacionEmployerTarjeta.getCodigoSeguridad(),completarInformacionEmployerTarjeta.getFechaExpiracion())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/aplicar-oferta")) {
-            Solicitudes solicitudes = readJsonSolicitud(resp, req);
-            aplicarOferta(conexion, solicitudes.getCodigoOferta(), user.getCodigo(), solicitudes.getMensaje());
+            Solicitudes solicitudes = (Solicitudes) userService.leerJson(resp, req, Solicitudes.class);
+            if (solicitudes == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            assert solicitudes != null;
+            if (!aplicarOferta(conexion, solicitudes.getCodigoOferta(), user.getCodigo(), solicitudes.getMensaje())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/buscar-empresa")) {
-            Filtros filtros = readJsonFiltros(resp, req);
+            Filtros filtros = (Filtros) userService.leerJson(resp, req, Filtros.class);
+            if (filtros == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             System.out.println("Filtros  : "+filtros);
             List<OfertasEmpresa> ofertas = listarOfertasFiltros(conexion, filtros,user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), ofertas);
+            userService.enviarJson(resp,ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if(uri.endsWith("/listar-ofertas-filtros")) {
-            Filtros filtros = readJsonFiltros(resp, req);
+            Filtros filtros = (Filtros) userService.leerJson(resp, req, Filtros.class);
+            if (filtros == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             System.out.println("Filtros  : "+filtros);
             List<OfertasEmpresa> ofertas = listarOfertasFiltros(conexion, filtros, user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), ofertas);
+            userService.enviarJson(resp, ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
 
@@ -195,7 +201,7 @@ public class ApplicantController extends HttpServlet{
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
 
@@ -217,27 +223,26 @@ public class ApplicantController extends HttpServlet{
 
         if (uri.endsWith("/actualizar-usuario")) {
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-            User usuario = (User) leerJson(resp,req,User.class);
+            User usuario = (User) userService.leerJson(resp,req,User.class);
+            if (usuario == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             adminService = new AdminService(conexion);
-            adminService.actualizarUsuario(usuario);
+            assert usuario != null;
+            if (!adminService.actualizarUsuario(usuario)) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
         if (uri.endsWith("/actualizar-telefonos")) {
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
             List<NumTelefono> telefonos = readJsonTelefonos(resp,req);
+            if (telefonos == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             adminService = new AdminService(conexion);
-            adminService.actualizarTelefono(telefonos);
+            assert telefonos != null;
+            if (!adminService.actualizarTelefono(telefonos))resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
     public List<Categoria> listarCategorias(Connection conexion){
         applicantService = new ApplicantService(conexion);
         return applicantService.listarCategorias();
-    }
-
-    public List<OfertasEmpresa> listarOfertasNombre(Connection conexion, String Nombre, int usuario){
-        applicantService = new ApplicantService(conexion);
-        return applicantService.lisatarOfertaNombre(Nombre, usuario);
     }
 
     public List<OfertasEmpresa> listarOfertasSugerencia(Connection conexion, int codigo){
@@ -255,7 +260,7 @@ public class ApplicantController extends HttpServlet{
     }
 
     public List<Modalidades> listarModalidad(Connection conexion){
-        employerService = new EmployerService(conexion);
+        EmployerService employerService = new EmployerService(conexion);
         return employerService.listarModalidades();
     }
 
@@ -264,16 +269,9 @@ public class ApplicantController extends HttpServlet{
         return applicantService.listarUbicaciones();
     }
 
-    private CompletarInformacionEmployerTarjeta readJsonTarjeta(HttpServletResponse resp, HttpServletRequest req) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        CompletarInformacionEmployerTarjeta completarInformacionEmployerTarjeta = objectMapper.readValue(req.getInputStream(), CompletarInformacionEmployerTarjeta.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return completarInformacionEmployerTarjeta;
-    }
-
-    private void completarInformacion(Connection conexion, String curriculum, int usuario){
+    private boolean completarInformacion(Connection conexion, String curriculum, int usuario){
         applicantService = new ApplicantService(conexion);
-        applicantService.completarInformacion(curriculum,usuario);
+        return applicantService.completarInformacion(curriculum,usuario);
     }
 
     private void crearCategorias(Connection conexion, int usuario, int categoria){
@@ -281,25 +279,20 @@ public class ApplicantController extends HttpServlet{
         applicantService.crearCategoria(usuario,categoria);
     }
 
-    public Object leerJson(HttpServletResponse resp, HttpServletRequest req , Class clase) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        Object valor = objectMapper.readValue(req.getInputStream(), clase);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return valor;
-    }
 
-    private void aplicarOferta(Connection conexion, int oferta, int usuario, String mensaje){
+
+    private boolean aplicarOferta(Connection conexion, int oferta, int usuario, String mensaje){
         applicantService = new ApplicantService(conexion);
-        applicantService.aplicarOferta(oferta,usuario,mensaje);
+        return applicantService.aplicarOferta(oferta,usuario,mensaje);
     }
 
     private List<OfertasEmpresa> listarOfertasEmpleo(Connection conexion, int usuarion){
         applicantService = new ApplicantService(conexion);
         return applicantService.listarOfeta(usuarion);
     }
-    private void completarInformacionTarjeta(Connection conexion,int codigo, int codigoUsuario, String Titular,int numero,int codigoSeguridad, Date fechaExpiracion){
+    private boolean completarInformacionTarjeta(Connection conexion,int codigo, int codigoUsuario, String Titular,int numero,int codigoSeguridad, Date fechaExpiracion){
         applicantService = new ApplicantService(conexion);
-        applicantService.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad, fechaExpiracion);
+        return applicantService.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad, fechaExpiracion);
     }
 
     public Usuarios listarUsuario(Connection conexion, int codigo){
@@ -310,20 +303,6 @@ public class ApplicantController extends HttpServlet{
     public List<NumTelefono> listarTelefonos(Connection conexion, int codigo){
         adminService = new AdminService(conexion);
         return adminService.listarTelefonos(codigo);
-    }
-
-    private CompletarInformacionApplicant readJson(HttpServletResponse resp, HttpServletRequest req) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        CompletarInformacionApplicant completarInformacionApplicant = objectMapper.readValue(req.getInputStream(), CompletarInformacionApplicant.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return completarInformacionApplicant;
-    }
-
-    private Solicitudes readJsonSolicitud(HttpServletResponse resp, HttpServletRequest req) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        Solicitudes solicitudes = objectMapper.readValue(req.getInputStream(), Solicitudes.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return solicitudes;
     }
 
     private List<NumTelefono> readJsonTelefonos(HttpServletResponse resp, HttpServletRequest req) throws IOException {
@@ -348,17 +327,5 @@ public class ApplicantController extends HttpServlet{
         }
     }
 
-    private Filtros readJsonFiltros(HttpServletResponse resp, HttpServletRequest req) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        Filtros filtros = objectMapper.readValue(req.getInputStream(), Filtros.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return filtros;
-    }
 
-    public void enviarJson(HttpServletResponse resp, Object valor) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        objectMapper.writeValue(resp.getWriter(), valor);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-
-    }
 }

@@ -18,10 +18,9 @@ public class UsuarioPdf {
 
     @JsonIgnore
     public Blob getPdf() {
-        return pdf;
+        return  pdf;
     }
 
-    // Agrega este método para obtener los bytes del Blob
     public byte[] getPdfBytes() {
         try {
             if (pdf != null) {

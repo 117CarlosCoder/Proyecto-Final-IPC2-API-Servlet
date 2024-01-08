@@ -3,6 +3,7 @@ package com.ipc2.proyectofinalservlet.data;
 import com.ipc2.proyectofinalservlet.model.Applicant.*;
 import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
+import com.mysql.cj.jdbc.Blob;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.io.InputStream;
@@ -141,6 +142,17 @@ public class ApplicantDB    {
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1,usuario);
             preparedStatement.setBlob(2,inputStream);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void actualizarPdf(int usuario, InputStream inputStream){
+        String query = "UPDATE curriculum SET  pdf = ? WHERE codigoUsuario = ?";
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setBlob(1,inputStream);
+            preparedStatement.setInt(2,usuario);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -662,7 +674,7 @@ public class ApplicantDB    {
                     var codigo = resultset.getInt("codigo");
                     var codigoUsuario = resultset.getInt("codigoUsuario");
                     var pdf = resultset.getBlob("pdf");
-                    pdfn = new UsuarioPdf(codigo, codigoUsuario, pdf);
+                    pdfn = new UsuarioPdf(codigo, codigoUsuario, (Blob) pdf);
                 }
             }
         } catch (SQLException e) {

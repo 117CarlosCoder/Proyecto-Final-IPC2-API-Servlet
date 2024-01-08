@@ -17,34 +17,43 @@ import java.sql.Connection;
 @WebServlet(name = "ApplicantPDF", urlPatterns = {"/v1/applicant-curriculum/*"})
 @MultipartConfig()
 public class AplicantPDF extends HttpServlet {
-    private ApplicantService applicantService;
-    private UserService userService ;
-    private String username;
-    private String password;
-    private User user;
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)throws  IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
 
         String authorizationHeader = request.getHeader("Authorization");
 
-        userService = new UserService(conexion);
+        UserService userService = new UserService(conexion);
         String[] parts = userService.autorizacion(authorizationHeader,response);
-        username = parts[0];
-        password = parts[1];
+        String username = parts[0];
+        String password = parts[1];
 
 
-        user = userService.validarUsuario(conexion,username,password,username);
-        if (!user.getRol().equals("Solicitante")) {
+        User user = userService.validarUsuario(conexion, username, password, username);
+        if (!user.getRol().equals("Solicitante") && !user.getRol().equals("Administrador") ) {
             response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
         }
 
+        String uri = request.getRequestURI();
         InputStream inputStream = request.getInputStream();
         System.out.println("Pdf : " + inputStream);
-        applicantService = new ApplicantService(conexion);
-        applicantService.guardarPfs(user.getCodigo(), inputStream);
+        ApplicantService applicantService = new ApplicantService(conexion);
+
+        if (uri.endsWith("/guardar-pdf")) {
+            applicantService.guardarPfs(user.getCodigo(), inputStream);
+        }
+
+        if (uri.endsWith("/actualizar-pdf")) {
+            applicantService.actualizarPdfs(user.getCodigo(), inputStream);
+        }
+
+        if (uri.endsWith("/actualizar-pdf-admin")) {
+            int codigo = Integer.parseInt(request.getParameter("codigo"));
+            applicantService.actualizarPdfs(codigo, inputStream);
+        }
+
 
     }
 

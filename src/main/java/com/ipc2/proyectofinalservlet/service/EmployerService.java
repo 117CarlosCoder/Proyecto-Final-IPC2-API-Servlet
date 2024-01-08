@@ -19,24 +19,39 @@ public class EmployerService {
     }
 
 
-    public void completarInformacion(String mision, String vision, int codigo){
+    public boolean completarInformacion(String mision, String vision, int codigo){
         System.out.println("Completar Informacion");
+        if (mision.isEmpty() || vision.isEmpty() || codigo == 0 ) return false;
         employerDB.completarInformacion(mision,vision,codigo);
+        return true;
     }
 
-    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, java.sql.Date fechaExpiracion, BigDecimal cantidad){
+    public boolean completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, java.sql.Date fechaExpiracion, BigDecimal cantidad){
         System.out.println("Completar Informacion Tarjeta");
+        if (codigoUsuario == 0 || Titular.isEmpty() || numero == 0 || fechaExpiracion == null || cantidad.compareTo(BigDecimal.ZERO)<0) return false;
         employerDB.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad,fechaExpiracion,cantidad);
+        return true;
     }
 
-    public void crearOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido){
+    public boolean actualizarInformacionTarjeta(CompletarInformacionEmployerTarjeta tarjeta, int usuario){
+        System.out.println("Actualizar Informacion Tarjeta");
+        if (tarjeta.getTitular().isEmpty() || tarjeta.getNumero() == 0 || tarjeta.getCantidad().compareTo(BigDecimal.ZERO) < 0 || tarjeta.getCodigoSeguridad() == 0 || tarjeta.getFechaExpiracion() != null || tarjeta.getCodigoUsuario() == 0) return false;
+        employerDB.actualizarInformacionTarjeta(tarjeta, usuario);
+        return true;
+    }
+
+    public boolean crearOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido){
         System.out.println("Crear Oferta");
+        if (nombre.isEmpty() || descripcion.isEmpty() || categoria == 0  ||fechaLimite == null || salario.compareTo(BigDecimal.ZERO)<0 || modalidad.isEmpty() || ubicacion.isEmpty() || detalles.isEmpty() ) return false;
         employerDB.crearOferta(nombre,descripcion,empresa, categoria,estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
+        return true;
     }
 
-    public void actualizarOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido, int codigo){
+    public boolean actualizarOferta(String nombre, String descripcion, int empresa, int categoria, String estado, Date fechaPublicacion, Date fechaLimite, BigDecimal salario, String modalidad, String ubicacion, String detalles, int usuarioElegido, int codigo){
         System.out.println("Actualizar Oferta");
+        if (nombre.isEmpty() || descripcion.isEmpty() || categoria == 0  || fechaLimite == null || salario.compareTo(BigDecimal.ZERO) < 0 || ubicacion.isEmpty() || detalles.isEmpty()) return false;
         employerDB.actualizarOferta(nombre,descripcion,empresa, categoria,estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido,codigo);
+        return true;
     }
 
     public Ofertas listarOfetaCodigo(int codigo){
@@ -44,9 +59,11 @@ public class EmployerService {
         return employerDB.listarOfertasCodigo(codigo);
     }
 
-    public void actualizarOfertaEstado(int codigo){
+    public boolean actualizarOfertaEstado(int codigo){
         System.out.println("Actualizar Oferta");
+        if (codigo == 0 ) return false;
         employerDB.actualizarOfertaEstado(codigo);
+        return true;
     }
     public List<Ofertas> listarOfertas(){
         System.out.println("listar ofertas");
@@ -58,9 +75,14 @@ public class EmployerService {
         return employerDB.listarOfertasEmpresa(empresa);
     }
 
-    public List<Ofertas> listarOfertasEmpresaFecha(java.sql.Date fechaA, java.sql.Date fechaB){
+    public List<Ofertas> listarOfertasEmpresaFecha(java.sql.Date fechaA, java.sql.Date fechaB, String fechaS, int empresa){
         System.out.println("listar ofertas Empresa");
-        return employerDB.listarOfertasEmpresaFecha(fechaA, fechaB);
+        return employerDB.listarOfertasEmpresaFecha(fechaA, fechaB, fechaS, empresa);
+    }
+
+    public TarjetaDatos listarTarjetaEmpresa(int empresa){
+        System.out.println("listar Tarjeta Empresa");
+        return employerDB.listarTarjetaEmpresa(empresa);
     }
 
     public List<Ofertas> listarOfertasEmpresaPos(int empresa){
@@ -117,14 +139,18 @@ public class EmployerService {
         return employerDB.listarOfertaFecha(fechaA,fechaB, estado,empresa);
     }
 
-    public void finalizarEntrevista(String notas, int usuario , int codigo){
+    public boolean finalizarEntrevista(String notas, int usuario , int codigo){
         System.out.println("finalizar entrevista");
+        if (notas.isEmpty() || usuario == 0 || codigo == 0) return false;
         employerDB.finalizarEntrevista(notas,usuario,codigo);
+        return true;
     }
 
-    public void contratar(int usuario, int codigo){
+    public boolean contratar(int usuario, int codigo){
         System.out.println("Contratar");
+        if (usuario == 0 || codigo == 0) return false;
         employerDB.contratar(usuario, codigo);
+        return true;
     }
 
     public List<Modalidades> listarModalidades(){

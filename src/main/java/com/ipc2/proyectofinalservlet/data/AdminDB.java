@@ -1,5 +1,6 @@
 package com.ipc2.proyectofinalservlet.data;
 
+import com.ipc2.proyectofinalservlet.controller.UserController.Encriptador;
 import com.ipc2.proyectofinalservlet.model.Admin.*;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
@@ -11,6 +12,7 @@ import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -18,7 +20,9 @@ import java.util.List;
 
 public class AdminDB {
 
-    private Connection conexion;
+    private final Connection conexion;
+    private Encriptador encriptador;
+
     public AdminDB(Connection conexion){ this.conexion = conexion;}
 
 
@@ -148,7 +152,7 @@ public class AdminDB {
     }
 
     public CantidadTotal ofertaTotalFecha(int categorian, String fechaA, String fechaB){
-        String query = "SELECT SUM(c.cantidad) AS cantidadTotal, g.nombre AS 'categoria'  FROM cobros c INNER JOIN categoria g ON g.codigo = c.categoria WHERE categoria=? AND fecha BETWEEN ? AND ?";
+        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS cantidadTotal FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' AND o.categoria = ? AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY cantidadTotal DESC LIMIT 5";
         CantidadTotal cantidadTotal = null;
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -174,7 +178,7 @@ public class AdminDB {
     }
 
     public CantidadTotal ofertaTotal(){
-        String query = "SELECT SUM(c.cantidad) AS cantidadTotal, g.nombre AS categoria FROM cobros c INNER JOIN categoria g ON g.codigo = c.categoria GROUP BY g.nombre";
+        String query = "SELECT IFNULL(SUM(c.cobro), 0) AS cantidadTotal, IFNULL(g.nombre, 'Todas') AS 'categoria' FROM cobroComision c INNER JOIN categoria g ON g.codigo = c.categoria GROUP BY g.nombre WITH ROLLUP";
         CantidadTotal cantidadTotal = null;
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -296,7 +300,7 @@ public class AdminDB {
 
     public void actualizarUsuario(User usuario){
         String query = "UPDATE usuarios SET CUI=?,curriculum=?,direccion=?,email=?,fechaFundacion=?,fechaNacimiento=?,mision=?,nombre=?,password=?,username=?,vision=? where codigo=?";
-
+        encriptador = new Encriptador();
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setString(1,usuario.getCUI());
             preparedStatement.setString(2,usuario.getCurriculum());
@@ -306,14 +310,14 @@ public class AdminDB {
             preparedStatement.setDate(6,usuario.getFechaNacimiento());
             preparedStatement.setString(7,usuario.getMision());
             preparedStatement.setString(8,usuario.getNombre());
-            preparedStatement.setString(9,usuario.getPassword());
+            preparedStatement.setString(9, encriptador.encriptarContrasena(usuario.getPassword(), encriptador.generarSecuencia()));
             preparedStatement.setString(10,usuario.getUsername());
             preparedStatement.setString(11,usuario.getVision());
             preparedStatement.setInt(12,usuario.getCodigo());
 
             preparedStatement.executeUpdate();
 
-        } catch (SQLException e) {
+        } catch (SQLException | NoSuchAlgorithmException e ) {
             throw new RuntimeException(e);
         }
     }
@@ -356,14 +360,14 @@ public class AdminDB {
         return categoria;
     }
     public Dashboard dashboardVista (){
-        String query = "SELECT (SELECT COUNT(*) FROM usuarios WHERE rol = 'Empleador') AS cantidad_empleadores, (SELECT COUNT(*) FROM usuarios WHERE rol = 'Solicitante') AS cantidad_solicitantes, COALESCE(SUM(c.cantidad), 0) AS cantidad_cobros, COALESCE((SELECT SUM(vista) FROM invitado), 0) AS total_vistas FROM cobros c";
+        String query = "SELECT (SELECT COUNT(*) FROM usuarios WHERE rol = 'Empleador') AS cantidad_empleadores, (SELECT COUNT(*) FROM usuarios WHERE rol = 'Solicitante') AS cantidad_solicitantes, COALESCE(SUM(c.cobro), 0) AS cantidad_cobros, COALESCE((SELECT SUM(vista) FROM invitado), 0) AS total_vistas FROM cobroComision c";
         Dashboard dashboard = null;
         try(var select = conexion.prepareStatement(query)) {
             ResultSet resultset = select.executeQuery();
             while (resultset.next()) {
                 var cantidad_empleadores = resultset.getInt("cantidad_empleadores");
                 var cantidad_solicitantes = resultset.getInt("cantidad_solicitantes");
-                var cantidad_cobros= resultset.getInt("cantidad_cobros");
+                var cantidad_cobros= resultset.getBigDecimal("cantidad_cobros");
                 var total_vistas= resultset.getInt("total_vistas");
                 dashboard = new Dashboard(cantidad_empleadores,cantidad_solicitantes,cantidad_cobros, total_vistas);
             }
@@ -396,7 +400,8 @@ public class AdminDB {
                     var fechaNacimiento = resultSet.getDate("fechaNacimiento");
                     var fechaFundacion = resultSet.getDate("fechaFundacion");
                     var curriculum = resultSet.getString("curriculum");
-                    usuario = new Usuarios(codigo,nombre,direccion,username,password,email,CUI, fechaNacimiento,fechaFundacion, curriculum,null);
+                    var suspension = resultSet.getBoolean("suspension");
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,"",email,CUI, fechaNacimiento,fechaFundacion,new String[]{}, curriculum,null,suspension);
                     usuarios.add(usuario);
                 }
             }
@@ -427,7 +432,8 @@ public class AdminDB {
                     var fechaNacimiento = resultSet.getDate("fechaNacimiento");
                     var fechaFundacion= resultSet.getDate("fechaFundacion");
                     var curriculum = resultSet.getString("curriculum");
-                    usuario = new Usuarios(codigo,nombre,direccion,username,password,email,CUI, fechaNacimiento,fechaFundacion, curriculum,null);
+                    var suspension = resultSet.getBoolean("suspension");
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,"",email,CUI, fechaNacimiento,fechaFundacion,new String[]{}, curriculum,null, suspension);
 
                 }
             }
@@ -534,5 +540,17 @@ public class AdminDB {
         return telefonos;
     }
 
+    public void suspenderUsuario(String username, boolean estado){
+        String query = "UPDATE usuarios SET suspension = ? WHERE username = ?";
+
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setBoolean(1,estado);
+            preparedStatement.setString(2,username);
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException  e ) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

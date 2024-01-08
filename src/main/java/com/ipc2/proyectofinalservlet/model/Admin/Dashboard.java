@@ -2,6 +2,8 @@ package com.ipc2.proyectofinalservlet.model.Admin;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @ToString
@@ -10,7 +12,7 @@ import lombok.*;
 public class Dashboard {
     private int cantidad_empleadores;
     private int cantidad_solicitantes;
-    private int cantidad_cobros;
+    private BigDecimal cantidad_cobros;
     private int total_vistas;
 
 }

@@ -1,35 +1,67 @@
 package com.ipc2.proyectofinalservlet.controller.UserController;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import com.ipc2.proyectofinalservlet.data.CargaDB;
 import com.ipc2.proyectofinalservlet.data.Conexion;
+import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
+import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdfJson;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.CargarDatosFinal;
+import com.ipc2.proyectofinalservlet.model.User.User;
+import com.ipc2.proyectofinalservlet.service.CargarDatosService;
+import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
+import org.apache.http.entity.ContentType;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.sql.Blob;
 import java.sql.Connection;
+import java.util.List;
 import java.util.Scanner;
 
 @WebServlet(name = "CargaManagerControler", urlPatterns = {"/v1/carga-servlet/*"})
 @MultipartConfig
 
 public class CargarDatosController extends HttpServlet {
+
+    private UserService userService;
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Conexion conexion = new Conexion();
+        Connection connection = conexion.obtenerConexion();
+        List<User> users = listarUsuariosSinPDF(connection);
+        resp.setStatus(HttpServletResponse.SC_OK);
+        userService = new UserService(connection);
+        userService.enviarJson(resp, users);
+
+
+    }
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession();
         Conexion conexion = new Conexion();
-        session.setMaxInactiveInterval(3600);
-        session.setAttribute("conexion", conexion.obtenerConexion());
-        session.setAttribute("valorconexion", conexion);
-        Connection connection = (Connection) session.getAttribute("conexion");
+        Connection connection = conexion.obtenerConexion();
+
+        cargarDatosInicio(connection,new BigDecimal(150));
+
+        String uri = req.getRequestURI();
+        userService = new UserService(connection);
+
+        if (uri.endsWith("/cargar-json")) {
 
         Part filePart = req.getPart("file");
         InputStream fileInputStream = filePart.getInputStream();
@@ -47,7 +79,7 @@ public class CargarDatosController extends HttpServlet {
         } catch (JsonSyntaxException e) {
 
         }
-        ;
+
 
         System.out.println("Calculando error2");
 
@@ -70,8 +102,8 @@ public class CargarDatosController extends HttpServlet {
                 assert datos != null;
                 carga.crearCategorias(datos.getCategorias());
                 carga.crearAdmin(datos.getAdmin());
-                carga.crearUsuariOEmpleador(datos.getEmpleadores());
-                carga.crearUsuarioSolicitante(datos.getUsuarios());
+                carga.cargarUsuariOEmpleador(datos.getEmpleadores());
+                carga.cargarUsuarioSolicitante(datos.getUsuarios());
                 carga.crearOferta(datos.getOfertas());
 
                 /*if (carga.errorEncontrado()){
@@ -87,5 +119,45 @@ public class CargarDatosController extends HttpServlet {
 
 
             }
+        }
+
+        if (uri.endsWith("/cargar-pdfs")){
+            List<UsuarioPdfJson> usuarioPdf  = readJsonUsuarioPdfs(resp,req);
+            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+            guardarPfs(usuarioPdf, connection);
+        }
     }
+
+    public void cargarDatosInicio(Connection conexion, BigDecimal cantidad){
+        CargarDatosService cargarDatosService = new CargarDatosService(conexion);
+        if (!cargarDatosService.listarComision()){
+            cargarDatosService.crearComision(cantidad);
+        }
+    }
+    public List<User> listarUsuariosSinPDF(Connection conexion){
+        CargarDatosService cargarDatosService = new CargarDatosService(conexion);
+        return cargarDatosService.listarUsuariosPdf();
+    }
+
+    public void guardarPfs(List<UsuarioPdfJson> usuarioPdf, Connection connection){
+        System.out.println("guardar pdfs");
+        CargarDatosService cargarDatosService = new CargarDatosService(connection);
+        cargarDatosService.guardarPdf( usuarioPdf);
+
+    }
+
+    private List<UsuarioPdfJson> readJsonUsuarioPdfs(HttpServletResponse resp, HttpServletRequest req) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
+        try {
+            List<UsuarioPdfJson> usuarioPdfList = objectMapper.readValue(req.getInputStream(), new TypeReference<>() {});
+            return usuarioPdfList;
+        } catch (JsonParseException | JsonMappingException e) {
+            System.out.println(e); // Maneja estas excepciones según tus requisitos
+            return null;  // O lanza una excepción adecuada
+        }
+    }
+
+
+
 }

@@ -7,120 +7,71 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
-import com.ipc2.proyectofinalservlet.service.SesionService;
 import com.ipc2.proyectofinalservlet.service.UserService;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.util.Base64;
-import java.util.List;
-import java.util.Random;
 
 @WebServlet(name = "UserManagerServlet", urlPatterns = {"/v1/user-servlet/*"})
 public class UserController extends HttpServlet {
 
     private UserService userService;
     private String username;
-    private SesionService sesionService;
     private String password;
     private User usuario;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        Conexion conectar = new Conexion();
-        Connection conexion = conectar.obtenerConexion();
-        HttpSession session = req.getSession(true);
+        Conexion conexion = new Conexion();
+        Connection connection = conexion.obtenerConexion();
 
         String authorizationHeader = req.getHeader("Authorization");
-        autorizacion(authorizationHeader,resp);
 
-        usuario = validarUsuario(conexion,username,password,username);
-        if (!usuario.getRol().equals("Administrador")) {
-            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
-            return;
+        userService = new UserService(connection);
+        User user = (User) userService.leerJson(resp,req,User.class);
+
+        if (user !=  null){
+            if (password == null && username == null || password == null || username == null ){
+                String[] parts = userService.autorizacion(authorizationHeader,resp);
+                username = parts[0];
+                password = parts[1];
+
+                usuario = userService.validarUsuario(connection,username,password,username);
+                if (!usuario.getRol().equals("Administrador")) {
+                    resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+                    return;
+                }
+            }
         }
 
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/crear-telefonos")) {
             Telefono telefono = readJsonTelefonos(resp,req);
-            if(usuario!=null) {
-                crearTelefonos(conexion, usuario, telefono);
-            }
+            crearTelefonos(connection, usuario, telefono);
         }
 
 
         if (uri.endsWith("/crear-usuario-solicitante")) {
-
-            User user = readJson(resp,req);
-            if(user!=null){
-                if (!comprobarEmail(conexion,user.getEmail())) {
-                    session.setAttribute("usuario",user);
-                    crearUsuarioSolicitante(conexion, user);
-                    System.out.println( session.getAttribute("usuario"));
-                    resp.setStatus(HttpServletResponse.SC_CREATED);
-                }
-            }
-            else {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                return;
-            }
+            crearUsuarioSolicitante(connection, user, resp);
         }
 
         if (uri.endsWith("/crear-usuario-empleador")) {
-            User user = readJson(resp,req);
-            if(user!=null){
-                if (!comprobarEmail(conexion,user.getEmail())) {
-                    session.setAttribute("usuario",user);
-                    crearUsuarioEmpleador(conexion, user);
-                    resp.setStatus(HttpServletResponse.SC_CREATED);
-                }
-            }
-            else {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                return;
-            }
+            crearUsuarioEmpleador(connection, user, resp);
+
         }
 
         if (uri.endsWith("/restablecer-contrasena")) {
             String email = req.getParameter("email");
-
-
-            if (email!=null){
-                if (comprobarEmail(conexion,email)) {
-                    restablecerContrasena(conexion, email);
-                    conectar.desconectar(conexion);
-                    resp.setStatus(HttpServletResponse.SC_CREATED);
-                }
-            }
-
-            else {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-
-            }
-        }
-
-        if (uri.endsWith("/cargar-datos")) {
+            restablecerContrasena(connection, email, conexion, resp);
 
         }
 
-
-    }
-
-
-
-    private User readJson(HttpServletResponse resp, HttpServletRequest req) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        User user = objectMapper.readValue(req.getInputStream(), User.class);
-        resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-        return user;
     }
 
     private Telefono readJsonTelefonos(HttpServletResponse resp, HttpServletRequest req) throws IOException {
@@ -130,25 +81,24 @@ public class UserController extends HttpServlet {
         return telefono;
     }
 
-    private void crearUsuarioSolicitante(Connection conexion, User user){
+    private void crearUsuarioSolicitante(Connection conexion, User user, HttpServletResponse resp){
         userService = new UserService(conexion);
-        userService.crearUsuarioSolicitante(user,false);
-
+        if(user!=null){
+            if (!comprobarEmail(conexion,user.getEmail())) {
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+                userService.crearUsuarioSolicitante(user,false, resp);
+            }
+        }
+        else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
     }
     private void crearTelefonos(Connection conexion, User user, Telefono telefono){
         System.out.println("CrearTelefono");
         userService = new UserService(conexion);
-        if ((telefono.getTelefono1() != null)){
-            userService.crearTelefono(telefono.getTelefono1(), user);
+        if (usuario!=null){
+            userService.crearTelefono(telefono,user);
         }
-        if ((telefono.getTelefono2() != null)){
-            userService.crearTelefono(telefono.getTelefono2(),user);
-        }
-        if ((telefono.getTelefono3() != null)){
-            userService.crearTelefono(telefono.getTelefono3(),user);
-        }
-
-
     }
 
     private boolean comprobarEmail(Connection conexion,String email){
@@ -157,38 +107,36 @@ public class UserController extends HttpServlet {
 
     }
 
-    private void crearUsuarioEmpleador(Connection conexion, User user){
+    private void crearUsuarioEmpleador(Connection conexion, User user, HttpServletResponse resp){
         userService = new UserService(conexion);
-        userService.crearUsuarioEmpleador(user);
+        if(user!=null){
+            if (!comprobarEmail(conexion,user.getEmail())) {
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+                userService.crearUsuarioEmpleador(user);
+            }
+        }
+        else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
+
 
     }
 
-    private void restablecerContrasena(Connection conexion, String email){
-        userService = new UserService(conexion);
+    private void restablecerContrasena(Connection connection, String email, Conexion conexion, HttpServletResponse resp){
+        userService = new UserService(connection);
+        if (email!=null){
+            if (comprobarEmail(connection,email)) {
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+                conexion.desconectar(connection);
+            }
+        }
+        else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
         userService.restablecerContrasena(email);
 
     }
-    public User validarUsuario(Connection conexion,String username, String password, String email) {
-        System.out.println("validar : ");
-        sesionService = new SesionService(conexion);
-        return sesionService.obtenerUsuario(username, password, email);
-    }
 
-    public void autorizacion(String authorizationHeader, HttpServletResponse resp) {
-        if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
-            String base64Credentials = authorizationHeader.substring("Basic ".length()).trim();
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
-            String[] parts = credentials.split(":", 2);
-            username = parts[0];
-            password = parts[1];
-            System.out.println("Username: " + username);
-            System.out.println("Password: " + password);
-        }
-        else {
-            System.out.println("Usuario no aceptado");
-            resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
-        }
 
-    }
 
 }

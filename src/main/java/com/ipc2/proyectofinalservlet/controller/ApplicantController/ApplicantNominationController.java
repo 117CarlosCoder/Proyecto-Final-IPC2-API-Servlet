@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.EstadoSolicitud;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.OfertasEmpresa;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
 import com.ipc2.proyectofinalservlet.service.UserService;
@@ -13,8 +14,6 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -28,6 +27,10 @@ public class ApplicantNominationController extends HttpServlet {
     private String username;
     private String password;
     private User user;
+
+    private int codigo;
+
+    private boolean valor;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conectar = new Conexion();
@@ -48,33 +51,28 @@ public class ApplicantNominationController extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
+        obtenerParamtros(req);
 
         if(uri.endsWith("/listar-postulaciones")) {
             List<EstadoSolicitud> solicitudes = listarPostulaciones(conexion, user.getCodigo());
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), solicitudes);
+            userService.enviarJson(resp,solicitudes);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
         if(uri.endsWith("/listar-oferta-postulacion")) {
-            int codigo = Integer.parseInt(req.getParameter("codigo"));
-            boolean valor = Boolean.parseBoolean(req.getParameter("valor"));
-            OfertasEmpresa oferta = null;
+            OfertasEmpresa oferta ;
             if (valor){
                 oferta = listarOfetaPostulacion(conexion, codigo, user.getCodigo());
             }
             else {
                 oferta = listarOfetaPostulacionSinE(conexion, codigo, user.getCodigo());
             }
-            ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-            resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-            objectMapper.writeValue(resp.getWriter(), oferta);
+            userService.enviarJson(resp,oferta);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
 
@@ -103,7 +101,7 @@ public class ApplicantNominationController extends HttpServlet {
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) {
         Conexion conectar = new Conexion();
         Connection conexion = conectar.obtenerConexion();
 
@@ -124,7 +122,7 @@ public class ApplicantNominationController extends HttpServlet {
         String uri = req.getRequestURI();
 
         if(uri.endsWith("/eliminar-postulacion")) {
-            int codigo = Integer.parseInt(req.getParameter("codigo"));
+            obtenerParamtros(req);
             eliminarPostulacione(conexion, codigo);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
@@ -155,5 +153,16 @@ public class ApplicantNominationController extends HttpServlet {
         System.out.println("Eliminar postulacion");
         applicantService = new ApplicantService(conexion);
         applicantService.eliminarPostulacion(codigo);
+    }
+
+    private void  obtenerParamtros(HttpServletRequest req){
+        try {
+            codigo = Integer.parseInt(req.getParameter("codigo"));
+        }catch (Exception e){
+            System.out.println(e);
+            codigo = 0;
+        }
+
+        valor = Boolean.parseBoolean(req.getParameter("valor"));
     }
 }

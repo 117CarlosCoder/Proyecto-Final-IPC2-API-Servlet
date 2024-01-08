@@ -1,30 +1,41 @@
 package com.ipc2.proyectofinalservlet.data;
 
+import com.ipc2.proyectofinalservlet.controller.UserController.Encriptador;
 import com.ipc2.proyectofinalservlet.model.Admin.Admin;
+import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
+import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdfJson;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.Entrevista;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.Solicitudes;
 import com.ipc2.proyectofinalservlet.model.Employer.Employer;
 import com.ipc2.proyectofinalservlet.model.Employer.OfertasCarga;
 import com.ipc2.proyectofinalservlet.model.Employer.Tarjeta;
-import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
+import javax.sql.rowset.serial.SerialBlob;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Blob;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
-import static java.sql.Types.DATE;
 import static java.sql.Types.NULL;
 
 public class CargaDB {
     private final Connection conexion;
 
-    public CargaDB(Connection conexion){  this.conexion = conexion;}
+    private Encriptador encriptador;
 
+    public CargaDB(Connection conexion){  this.conexion = conexion;}
 
     public void crearCategorias(List<Categoria> categorias){
         String query = "INSERT INTO categoria VALUES(null,?,?) ";
@@ -44,9 +55,109 @@ public class CargaDB {
 
 
     }
+
+    public void crearTarjeta(Tarjeta tarjeta, int usuario){
+        String query = "INSERT INTO tarjeta VALUES(null,?,?,?,?,?,?) ";
+
+                try(var preparedStatement = conexion.prepareStatement(query)) {
+                    preparedStatement.setInt(1,usuario);
+                    preparedStatement.setString(2, tarjeta.getTitular());
+                    preparedStatement.setBigDecimal(3, tarjeta.getNumero());
+                    preparedStatement.setInt(4,tarjeta.getCodigoSeguridad());
+                    preparedStatement.setDate(5,Date.valueOf("2024-08-12"));
+                    preparedStatement.setBigDecimal(6,BigDecimal.valueOf(1600));
+
+                    preparedStatement.executeUpdate();
+                    System.out.println("Tarjeta empleador creada");
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+    }
+
+    public void crearUsuarioSuspension(String username){
+        String query = "INSERT INTO suspension VALUES(null,?,false) ";
+
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setString(1,username);
+            preparedStatement.executeUpdate();
+            System.out.println("Apartado suspension");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void crearCategoriaUsuario(int[] categorias, int usuario){
+        String query = "INSERT INTO categoriaUsuario VALUES(null,?,?) ";
+        for (int categoria : categorias) {
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, usuario);
+                preparedStatement.setInt(2, categoria);
+
+                preparedStatement.executeUpdate();
+                System.out.println("Usuario Categoria creada");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void crearSolicitudes(List<Solicitudes> solicitudes, int oferta){
+        String query = "INSERT INTO solicitudes VALUES(null,?,?,?) ";
+        for (Solicitudes solicitud : solicitudes) {
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, oferta);
+                preparedStatement.setInt(2, solicitud.getUsuario());
+                preparedStatement.setString(3, solicitud.getMensaje());
+
+                preparedStatement.executeUpdate();
+                System.out.println("Solicitud creada");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void crearEntrevistas(List<Entrevista> entrevistas, int oferta){
+        String query = "INSERT INTO entrevistas VALUES(null,?,?,?,?,?,?,?) ";
+        for (Entrevista entrevista : entrevistas) {
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, oferta);
+                preparedStatement.setInt(2, entrevista.getUsuario());
+                preparedStatement.setDate(3, entrevista.getFecha());
+                preparedStatement.setString(4, entrevista.getHora());
+                preparedStatement.setString(5, entrevista.getUbicacion());
+                preparedStatement.setString(6, entrevista.getEstado());
+                preparedStatement.setString(7, entrevista.getNotas());
+
+                preparedStatement.executeUpdate();
+                System.out.println("Solicitud creada");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void crearTelefonos(String[] telefonos, int usuario){
+        String query = "INSERT INTO telefonos VALUES(null,?,?) ";
+
+        for (String telefono : telefonos) {
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, usuario);
+                preparedStatement.setInt(2, Integer.parseInt(telefono));
+
+                preparedStatement.executeUpdate();
+                System.out.println("Crendo Telefonos ");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public void crearAdmin(Admin admin) {
         System.out.println("creando usuario administrador");
-        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'Administrador',NULL,NULL)";
+        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,?,NULL,NULL,'Administrador',NULL,NULL,false)";
+        encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
 
 
             try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -54,14 +165,18 @@ public class CargaDB {
                 preparedStatement.setString(2, admin.getNombre());
                 preparedStatement.setString(3, admin.getDireccion());
                 preparedStatement.setString(4, admin.getUsername());
-                preparedStatement.setString(5, admin.getPassword());
-                preparedStatement.setString(6, admin.getEmail());
-                preparedStatement.setString(7,admin.getCUI());
-                preparedStatement.setDate(8,admin.getFechaNacimiento());
+                preparedStatement.setString(5,encriptador.encriptarContrasena(admin.getPassword(), sal));
+                preparedStatement.setString(6,sal);
+                preparedStatement.setString(7, admin.getEmail());
+                preparedStatement.setString(8,admin.getCUI());
+                preparedStatement.setDate(9,admin.getFechaNacimiento());
                 preparedStatement.executeUpdate();
+                crearUsuarioSuspension(admin.getUsername());
                 System.out.println("Admin creado");
             } catch (SQLException e) {
                 System.out.println("Error al crear Admin: " + e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
             }
 
     }
@@ -71,8 +186,6 @@ public class CargaDB {
         String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL)";
 
         for (Usuarios user : usu) {
-
-
             try (var preparedStatement = conexion.prepareStatement(query)) {
                 preparedStatement.setInt(1, user.getCodigo());
                 preparedStatement.setString(2, user.getNombre());
@@ -94,9 +207,8 @@ public class CargaDB {
 
     public void crearUsuariOEmpleador(List<Employer> usu) {
         System.out.println("creando usuario empleador");
+
         String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL)";
-        //String querytelefonos = "INSERT INTO telefonos VALUES(NULL,?,?)";
-        //String querytarjeta = "INSERT INTO tarjeta VALUES(NULL,?,?,?,?,?,?)";
         for (Employer user : usu) {
             try (var preparedStatement = conexion.prepareStatement(query)) {
                 preparedStatement.setInt(1, user.getCodigo());
@@ -111,38 +223,80 @@ public class CargaDB {
 
                 preparedStatement.executeUpdate();
                 System.out.println("Empleador creado");
+
             } catch (SQLException e) {
                 System.out.println("Error al consultar: " + e);
-            }/*
-            for (String telefono:user.getTelefonos()) {
-                    try (var preparedStatement = conexion.prepareStatement(querytelefonos)) {
-
-                        preparedStatement.setInt(1, user.getCodigo());
-                        preparedStatement.setString(2, telefono);
-
-                        preparedStatement.executeUpdate();
-                        System.out.println("Empleador creado");
-                    } catch (SQLException e) {
-                        System.out.println("Error al consultar: " + e);
-                    }
-
-
             }
-            Tarjeta tarjeta = user.getTarjeta();
-            try (var preparedStatement = conexion.prepareStatement(querytarjeta)) {
+        }
+    }
 
+    public void cargarUsuarioSolicitante(List<Usuarios> usu) {
+        System.out.println("creando usuario solicitante");
+        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,?,?,?,NULL,NULL,false)";
+        encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
+        for (Usuarios user : usu) {
+
+            try (var preparedStatement = conexion.prepareStatement(query)) {
                 preparedStatement.setInt(1, user.getCodigo());
-                preparedStatement.setString(2, tarjeta.getTitular());
-                preparedStatement.setBigDecimal(3, tarjeta.getNumero());
-                preparedStatement.setInt(4, tarjeta.getCodigoSeguridad());
-                preparedStatement.setDate(5, Date.valueOf("2026-02-01"));
-                preparedStatement.setInt(6,1000 );
+                preparedStatement.setString(2, user.getNombre());
+                preparedStatement.setString(3, user.getDireccion());
+                preparedStatement.setString(4, user.getUsername());
+                preparedStatement.setString(5,encriptador.encriptarContrasena(user.getPassword(), sal));
+                preparedStatement.setString(6, sal);
+                preparedStatement.setString(7, user.getEmail());
+                preparedStatement.setString(8, user.getCUI());
+                preparedStatement.setDate(9, user.getFechaNacimiento());
+                preparedStatement.setString(10, user.getCurriculum());
+                preparedStatement.setString(11, "Solicitante");
+
+                preparedStatement.executeUpdate();
+                System.out.println("Solicitante creado");
+                crearUsuarioSuspension(user.getUsername());
+                crearTelefonos(user.getTelefonos(), user.getCodigo());
+                crearCategoriaUsuario(user.getCategorias(), user.getCodigo());
+            } catch (SQLException e) {
+                System.out.println("Error al consultar: " + e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void cargarUsuariOEmpleador(List<Employer> usu) {
+        System.out.println("creando usuario empleador");
+
+        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,?,NULL,NULL,?,?,?,false)";
+        encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
+
+        for (Employer user : usu) {
+
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, user.getCodigo());
+                preparedStatement.setString(2, user.getNombre());
+                preparedStatement.setString(3, user.getDireccion());
+                preparedStatement.setString(4, user.getUsername());
+                preparedStatement.setString(5,encriptador.encriptarContrasena( user.getPassword(), sal));
+                preparedStatement.setString(6, sal);
+                preparedStatement.setString(7, user.getEmail());
+                preparedStatement.setString(8, user.getCUI());
+                preparedStatement.setDate(9, user.getFechaFundacion());
+                preparedStatement.setString(10, "Empleador");
+                preparedStatement.setString(11, user.getMision());
+                preparedStatement.setString(12, user.getVision());
+
                 preparedStatement.executeUpdate();
                 System.out.println("Empleador creado");
+                crearUsuarioSuspension(user.getUsername());
+                crearTarjeta(user.getTarjeta(), user.getCodigo());
+                crearTelefonos(user.getTelefonos(), user.getCodigo());
+
             } catch (SQLException e) {
                 System.out.println("Error al consultar: " + e);
+            } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
             }
-            System.out.println("Empleador creado");*/
         }
     }
 
@@ -158,14 +312,16 @@ public class CargaDB {
                 preparedStatement.setInt(4, oferta.getEmpresa());
                 preparedStatement.setInt(5, oferta.getCategoria());
                 preparedStatement.setString(6, oferta.getEstado());
-                preparedStatement.setDate(7, (java.sql.Date) oferta.getFechaPublicacion());
-                preparedStatement.setDate(8, (java.sql.Date) oferta.getFechaLimite());
+                preparedStatement.setDate(7,  oferta.getFechaPublicacion());
+                preparedStatement.setDate(8, oferta.getFechaLimite());
                 preparedStatement.setBigDecimal(9, oferta.getSalario());
                 preparedStatement.setString(10, oferta.getModalidad());
                 preparedStatement.setString(11, oferta.getUbicacion());
                 preparedStatement.setString(12, oferta.getDetalles());
                 preparedStatement.setInt(13, oferta.getUsuarioElegido());
                 preparedStatement.executeUpdate();
+                crearSolicitudes(oferta.getSolicitudes(), oferta.getCodigo());
+                crearEntrevistas(oferta.getEntrevistas(), oferta.getCodigo());
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -220,5 +376,55 @@ public class CargaDB {
         }
         return comision;
     }
+
+    public List<User> listarUsuariosPdf(){
+        String query = "SELECT u.codigo, u.nombre, u.username, u.curriculum, u.fechaNacimiento, u.fechaFundacion FROM usuarios u WHERE u.rol = 'Solicitante' AND NOT EXISTS ( SELECT 1 FROM curriculum c WHERE c.codigoUsuario = u.codigo)";
+        User user = null;
+        List<User> users = new ArrayList<>();
+        try(var select = conexion.prepareStatement(query)) {
+            ResultSet resultset = select.executeQuery();
+            while (resultset.next()) {
+                var codigo = resultset.getInt("codigo");
+                var nombre = resultset.getString("nombre");
+                var direccion = "";
+                var username = resultset.getString("username");
+                var password = "";
+                var email ="";
+                var cui = "";
+                var curriculum = resultset.getString("curriculum");
+                var rol = "";
+                var fechaNacimiento = resultset.getDate("fechaNacimiento");
+                var fechaFundacion = resultset.getDate("fechaFundacion");
+                var mision = "";
+                var vision ="";
+                user = new User(codigo, nombre,direccion,username,password,email,cui,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision);
+                users.add(user);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return  users;
+    }
+
+    public void guardarPdf(List<UsuarioPdfJson> usuarioPdf){
+        String query = "INSERT INTO curriculum VALUES(null,?,?) ";
+        System.out.println(usuarioPdf);
+        for (UsuarioPdfJson usuario : usuarioPdf){
+            try(var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1,usuario.getCodigoUsuario());
+                        preparedStatement.setBlob(2, usuario.getPdfBlob().getBinaryStream());
+                        preparedStatement.executeUpdate();
+                        System.out.println("Pdf guardado");
+
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+
+
 
 }

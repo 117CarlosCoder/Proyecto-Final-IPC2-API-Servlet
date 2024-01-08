@@ -5,10 +5,7 @@ import com.ipc2.proyectofinalservlet.model.Admin.*;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Comision;
-import com.ipc2.proyectofinalservlet.model.CargarDatos.EntrevitaN;
 import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
-import com.ipc2.proyectofinalservlet.model.Employer.Telefonos;
-import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.math.BigDecimal;
@@ -22,26 +19,33 @@ public class AdminService {
         this.adminDB = new AdminDB(conexion);
     }
 
-    public void crearCategoria(int codigo,String nombre, String descripcion){
+    public boolean crearCategoria(int codigo,String nombre, String descripcion){
         System.out.println("Crear Categoria");
+        if (codigo != 0 || nombre.isEmpty() || descripcion.isEmpty()) return false;
         adminDB.crearCartegoria(codigo,nombre, descripcion);
+        return true;
     }
 
-    public void crearComision(BigDecimal comision, String fecha){
+    public boolean crearComision(BigDecimal comision, String fecha){
         System.out.println("Crear Comsion");
+        if (comision.compareTo(BigDecimal.ZERO) < 0 || fecha.isEmpty()) return false;
         adminDB.crearComision(comision, fecha);
+        return true;
     }
     public List<RegistroComision> listarRegistroComision(){
         System.out.println("listar registro comision");
         return adminDB.listarRegistroComision();
     }
 
-    public Categoria actualizarCategoria(int codigo,String nombre, String descripcion){
+    public Categoria actualizarCategoria(int codigo, String nombre, String descripcion){
         System.out.println("Actualizar Categoria");
+        if (codigo == 0 || nombre.isEmpty() || descripcion.isEmpty()){
+            return null;
+        }
         return adminDB.cambiarCategoria(codigo,nombre,descripcion);
     }
 
-    public void actualizarTelefono(List<NumTelefono> telefono){
+    public boolean actualizarTelefono(List<NumTelefono> telefono){
         System.out.println("Actualizar Telefonos");
         adminDB.actualizarTelefonos(telefono.get(0));
         if (telefono.size() > 1) {
@@ -53,6 +57,9 @@ public class AdminService {
                     adminDB.actualizarTelefonos(telefono.get(2));
                 }
             }
+            return true;
+        }else{
+            return false;
         }
     }
 
@@ -108,14 +115,18 @@ public class AdminService {
         System.out.println("listar telefonos");
         return adminDB.listarTelefonos(codigo);
     }
-    public void actualizarUsuario(User usuario){
+    public boolean actualizarUsuario(User usuario){
         System.out.println("Actualizar Usuario");
+        if (usuario.getDireccion().isEmpty() || usuario.getCodigo() == 0 || usuario.getUsername().isEmpty() || usuario.getEmail().isEmpty() || usuario.getNombre().isEmpty() || usuario.getPassword().isEmpty()) return  false;
+        System.out.println("Actualizando");
         adminDB.actualizarUsuario(usuario);
+        return true;
     }
+
 
     public void crearTelefonos( List<NumTelefono> numTelefonos){
         System.out.println("Crear Telefonos");
-        if (numTelefonos.size() > 0) {
+        if (!numTelefonos.isEmpty()) {
             adminDB.crearTelefonos(numTelefonos.get(0));
 
             if (numTelefonos.size() > 1) {
@@ -133,7 +144,7 @@ public class AdminService {
 
     public void crearTelefonosUsarioP2( List<TelefonosUsuario> numTelefonos){
         System.out.println("Crear Telefonos");
-        if (numTelefonos.size() > 0) {
+        if (!numTelefonos.isEmpty()) {
             adminDB.crearTelefonosUsuario(numTelefonos.get(0));
 
             if (numTelefonos.size() > 1) {
@@ -155,8 +166,13 @@ public class AdminService {
         System.out.println("Eliminar categoria");
         adminDB.eliminarCategoria(codigo);
     }
-    public void actualizarComision(int cantidad){
+
+    public void suspenderUsuario(String username, boolean estado){
+        System.out.println("suspender usuario");
+        adminDB.suspenderUsuario(username, estado);
+    }
+    /*public void actualizarComision(int cantidad){
         System.out.println("Actualizar Comision");
         adminDB.actualizarComision(cantidad);
-    }
+    }*/
 }

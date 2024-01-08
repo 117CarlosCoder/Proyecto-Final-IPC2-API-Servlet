@@ -18,10 +18,13 @@ public class Usuarios {
     private String direccion;
     private String username;
     private String password;
+    private String sal;
     private String email;
     private String CUI;
     private Date fechaNacimiento;
     private Date fechaFundacion;
+    private String[] telefonos;
     private String curriculum;
     private int[] categorias;
+    private boolean suspension;
 }

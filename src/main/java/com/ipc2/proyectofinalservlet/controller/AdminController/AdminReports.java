@@ -69,6 +69,9 @@ public class AdminReports extends HttpServlet {
         if (uri.endsWith("/total-ingresos")) {
             reporte = "TotalIngresos";
             params = totalIngresos(resp,req);
+            if (params.isEmpty()){
+                reporte = "TotalIngresosSinFecha";
+            }
 
         }
 
@@ -89,20 +92,32 @@ public class AdminReports extends HttpServlet {
     public Map<String, Object> empleadoFechaMasIngresos(HttpServletResponse resp, HttpServletRequest req){
         String fechaA = req.getParameter("fechaA");
         String fechaB = req.getParameter("fechaB");
-        resp.addHeader("Content-disposition", "attachment; filename=EmpleadoresMasIngresos.pdf");
         Map<String, Object> params = new HashMap<>();
+        if (fechaA.isEmpty() || fechaB.isEmpty()){
+
+        }else {
+        resp.addHeader("Content-disposition", "attachment; filename=EmpleadoresMasIngresos.pdf");
+
         params.put("fechaA", fechaA);
         params.put("fechaB",fechaB);
+        }
         return params;
     }
 
     public Map<String, Object> totalIngresos(HttpServletResponse resp, HttpServletRequest req){
         String fechaA = req.getParameter("fechaA");
         String fechaB = req.getParameter("fechaB");
-        resp.addHeader("Content-disposition", "attachment; filename=TotalIngresos.pdf");
+        int categoria = Integer.parseInt(req.getParameter("categoria"));
+
         Map<String, Object> params = new HashMap<>();
-        params.put("fechaA", fechaA);
-        params.put("fechaB",fechaB);
+        if (fechaA.isEmpty() || fechaB.isEmpty() || categoria == 0){
+            resp.addHeader("Content-disposition", "attachment; filename=TotalIngresosSinFecha.pdf");
+        }else {
+            resp.addHeader("Content-disposition", "attachment; filename=TotalIngresos.pdf");
+            params.put("fechaA", fechaA);
+            params.put("fechaB",fechaB);
+            params.put("categoria",categoria);
+        }
         return params;
     }
 

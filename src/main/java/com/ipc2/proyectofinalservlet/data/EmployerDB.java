@@ -3,6 +3,7 @@ package com.ipc2.proyectofinalservlet.data;
 import com.ipc2.proyectofinalservlet.model.Employer.EntrevistaFecha;
 import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
+import com.ipc2.proyectofinalservlet.model.Employer.TarjetaDatos;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -221,17 +222,56 @@ public class EmployerDB {
         return ofertas;
     }
 
-    public List<Ofertas> listarOfertasEmpresaFecha(java.sql.Date FechaA, java.sql.Date FechaB) {
-        String query = "SELECT * FROM ofertas WHERE fechaLimite BETWEEN ? AND ?";
+    public TarjetaDatos listarTarjetaEmpresa(int numEmpresa) {
+        String query = "SELECT * FROM tarjeta WHERE codigoUsuario = ? ";
+        TarjetaDatos tarjetaDatos = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, numEmpresa);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    var titular = resultSet.getString("titular");
+                    var numero = resultSet.getBigDecimal("numero");
+                    var codigoSeguridad = resultSet.getInt("codigoSeguridad");
+                    var fechaExpiracion = resultSet.getDate("fechaExpiracion");
+                    var cantidad = resultSet.getBigDecimal("cantidad");
+                    tarjetaDatos = new TarjetaDatos(titular, numero, codigoSeguridad, fechaExpiracion, cantidad);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al listar tarjeta de empresa: " + e);
+        }
+
+        return tarjetaDatos;
+    }
+
+    public List<Ofertas> listarOfertasEmpresaFecha(java.sql.Date FechaA, java.sql.Date FechaB, String FechaS, int empresan) {
+        String query = "SELECT * FROM ofertas WHERE empresa = ?  ";
+        if (FechaS.equals("fechaPublicacion")){
+            query = query + "AND fechaPublicacion BETWEEN ? AND ? ";
+        }
+        if (FechaS.equals("fechaLimite")){
+            query = query + "AND fechaLimite BETWEEN ? AND ? ";
+        }
+
         List<Ofertas> ofertas = new ArrayList<>();
         Ofertas oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
-            preparedStatement.setDate(1, FechaA);
-            preparedStatement.setDate(2, FechaB);
-
+            preparedStatement.setInt(1, empresan);
+            if (FechaS.equals("fechaPublicacion")){
+                preparedStatement.setDate(2, FechaA);
+                preparedStatement.setDate(3, FechaB);
+            }
+            if (FechaS.equals("fechaLimite")){
+                preparedStatement.setDate(2, FechaA);
+                preparedStatement.setDate(3, FechaB);
+            }
 
             try (var resultSet = preparedStatement.executeQuery()) {
+                System.out.println(query);
                 while (resultSet.next()) {
                     var codigo = resultSet.getInt("codigo");
                     var nombre = resultSet.getString("nombre");
@@ -248,6 +288,7 @@ public class EmployerDB {
                     var usuarioElegido = resultSet.getInt("usuarioElegido");
                     oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
                     ofertas.add(oferta);
+                    ;
                 }
             }
         } catch (SQLException e) {
@@ -547,7 +588,7 @@ public class EmployerDB {
     }
 
     public void contratar( int usuario, int codigo) {
-        String query = "UPDATE ofertas SET usuarioElegido = ? WHERE codigo = ? ";
+        String query = "UPDATE ofertas SET usuarioElegido = ?, estado = 'FINALIZADO' WHERE codigo = ? ";
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1, usuario);
@@ -565,19 +606,21 @@ public class EmployerDB {
             System.out.println("Error al eliminar: " + e);
         }
 
-        crearCobroComision(codigo,usuario,usuarioEmpresa(codigo),comision(),listarCantidadTarjeta(usuarioEmpresa(codigo)),listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()));
+        crearCobroComision(codigo,usuario,listarOfertasCodigo(codigo).getNombre(),usuarioEmpresa(codigo),comision(),listarCantidadTarjeta(usuarioEmpresa(codigo)),listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()),listarOfertasCodigo(codigo).getCategoria());
     }
 
-    public void crearCobroComision(int oferta,int usuario, int empresa, BigDecimal cobro, BigDecimal cantidadTarjeta, BigDecimal Total){
-        String query = "INSERT INTO cobroComision VALUES(NULL,?,?,?,?,?,?,NOW())";
+    public void crearCobroComision(int oferta,int usuario, String nombreOferta, int empresa, BigDecimal cobro, BigDecimal cantidadTarjeta, BigDecimal Total, int categoria){
+        String query = "INSERT INTO cobroComision VALUES(NULL,?,?,?,?,?,?,?,NOW(),?)";
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1, oferta);
-            preparedStatement.setInt(2, usuario);
-            preparedStatement.setInt(3, empresa);
-            preparedStatement.setBigDecimal(4, cobro);
-            preparedStatement.setBigDecimal(5, cantidadTarjeta);
-            preparedStatement.setBigDecimal(6, Total);
+            preparedStatement.setString(2, nombreOferta);
+            preparedStatement.setInt(3, usuario);
+            preparedStatement.setInt(4, empresa);
+            preparedStatement.setBigDecimal(5, cobro);
+            preparedStatement.setBigDecimal(6, cantidadTarjeta);
+            preparedStatement.setBigDecimal(7, Total);
+            preparedStatement.setInt(8, categoria);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -733,5 +776,20 @@ public class EmployerDB {
 
             return ofertas;
         }
+
+    public void actualizarInformacionTarjeta(CompletarInformacionEmployerTarjeta tarjeta, int usuario){
+        String query = "UPDATE tarjeta SET Titular = ?, numero = ?, codigoSeguridad=?, fechaExpiracion=?, cantidad=? WHERE codigoUsuario = ?";
+        try(var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setString(1, tarjeta.getTitular() );
+            preparedStatement.setInt(2,tarjeta.getNumero());
+            preparedStatement.setInt(3,tarjeta.getCodigoSeguridad());
+            preparedStatement.setDate(4,tarjeta.getFechaExpiracion());
+            preparedStatement.setBigDecimal(5,tarjeta.getCantidad());
+            preparedStatement.setInt(6,usuario);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }
