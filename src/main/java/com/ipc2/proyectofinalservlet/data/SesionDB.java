@@ -59,7 +59,8 @@ public class SesionDB {
                     var rol = resultSet.getString("rol");
                     var mision = resultSet.getString("mision");
                     var vision = resultSet.getString("vision");
-                    user = new User(codigo, nombre, direccion, username,password,email,CUI,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision);
+                    var suspension = resultSet.getBoolean("suspension");
+                    user = new User(codigo, nombre, direccion, username,password,sal,email,CUI,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision,suspension);
                 }
             }
         }catch (SQLException e) {

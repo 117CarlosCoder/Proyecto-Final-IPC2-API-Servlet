@@ -15,6 +15,7 @@ public class User {
     private String direccion;
     private String username;
     private String password;
+    private String sal;
     private String email;
     private String CUI;
     private Date fechaFundacion;
@@ -23,4 +24,5 @@ public class User {
     private String rol;
     private String mision;
     private String vision;
+    private boolean suspension;
 }

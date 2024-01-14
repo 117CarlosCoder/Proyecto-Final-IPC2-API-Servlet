@@ -8,13 +8,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperFillManager;
-import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.JasperExportManager;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,10 +22,9 @@ import java.util.Map;
 
 @WebServlet(name = "AdminReportsServlet", urlPatterns = {"/v1/admin-reports-servlet/*"})
 public class AdminReports extends HttpServlet {
-    private SesionService sesionService;
     private String username;
     private String password;
-    private User user;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conectar = new Conexion();
@@ -38,7 +32,7 @@ public class AdminReports extends HttpServlet {
         String authorizationHeader = req.getHeader("Authorization");
         autorizacion(authorizationHeader,resp);
 
-        user = validarUsuario(conexion,username,password,username);
+        User user = validarUsuario(conexion, username, password, username);
         if (!user.getRol().equals("Administrador")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
@@ -63,11 +57,14 @@ public class AdminReports extends HttpServlet {
         if (uri.endsWith("/empleadores-mas-ingresos")) {
             reporte = "EmpleadoresMasIngresos";
             params = empleadoFechaMasIngresos(resp,req);
+            if (params.isEmpty()){
+                reporte = "EmpleadoresMasIngresosGeneral";
+            }
 
         }
 
         if (uri.endsWith("/total-ingresos")) {
-            reporte = "TotalIngresos";
+            reporte = "IngresosTotales";
             params = totalIngresos(resp,req);
             if (params.isEmpty()){
                 reporte = "TotalIngresosSinFecha";
@@ -94,7 +91,7 @@ public class AdminReports extends HttpServlet {
         String fechaB = req.getParameter("fechaB");
         Map<String, Object> params = new HashMap<>();
         if (fechaA.isEmpty() || fechaB.isEmpty()){
-
+            resp.addHeader("Content-disposition", "attachment; filename=EmpleadoresMasIngresos.pdf");
         }else {
         resp.addHeader("Content-disposition", "attachment; filename=EmpleadoresMasIngresos.pdf");
 
@@ -111,9 +108,9 @@ public class AdminReports extends HttpServlet {
 
         Map<String, Object> params = new HashMap<>();
         if (fechaA.isEmpty() || fechaB.isEmpty() || categoria == 0){
-            resp.addHeader("Content-disposition", "attachment; filename=TotalIngresosSinFecha.pdf");
+            resp.addHeader("Content-disposition", "attachment; filename=IngresosTotales.pdf");
         }else {
-            resp.addHeader("Content-disposition", "attachment; filename=TotalIngresos.pdf");
+            resp.addHeader("Content-disposition", "attachment; filename=IngresosTotales.pdf");
             params.put("fechaA", fechaA);
             params.put("fechaB",fechaB);
             params.put("categoria",categoria);
@@ -123,7 +120,7 @@ public class AdminReports extends HttpServlet {
 
     public User validarUsuario(Connection conexion,String username, String password, String email) {
         System.out.println("validar : ");
-        sesionService = new SesionService(conexion);
+        SesionService sesionService = new SesionService(conexion);
         return sesionService.obtenerUsuario(username, password, email);
     }
 

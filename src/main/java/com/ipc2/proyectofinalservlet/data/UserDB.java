@@ -1,11 +1,16 @@
 package com.ipc2.proyectofinalservlet.data;
 
+import com.ipc2.proyectofinalservlet.controller.UserController.Encriptador;
+import com.ipc2.proyectofinalservlet.model.Applicant.ActualizarContrasena;
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
+import com.ipc2.proyectofinalservlet.model.User.Notificaciones;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jdt.internal.compiler.apt.model.NameImpl;
 
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -20,45 +25,53 @@ public class UserDB {
 
     public void crearUsuarioSolicitante(User user, String contrasena, HttpServletResponse resp) {
         System.out.println("creando usuario");
-        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL)";
-
+        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL,false)";
+        Encriptador encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setString(1, user.getNombre());
             preparedStatement.setString(2, user.getDireccion());
             preparedStatement.setString(3, user.getUsername());
-            preparedStatement.setString(4, contrasena);
-            preparedStatement.setString(5, user.getEmail());
-            preparedStatement.setString(6, user.getCUI());
-            preparedStatement.setDate(7, user.getFechaNacimiento());
-            preparedStatement.setString(8, user.getRol());
+            preparedStatement.setString(4, encriptador.encriptarContrasena(contrasena, sal));
+            preparedStatement.setString(5, sal);
+            preparedStatement.setString(6, user.getEmail());
+            preparedStatement.setString(7, user.getCUI());
+            preparedStatement.setDate(8, user.getFechaNacimiento());
+            preparedStatement.setString(9, user.getRol());
 
             preparedStatement.executeUpdate();
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void crearUsuarioSolicitanteAdmin(User user ) {
         System.out.println("creando usuario");
-        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL)";
-
+        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL,false)";
+        Encriptador encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setString(1, user.getNombre());
             preparedStatement.setString(2, user.getDireccion());
             preparedStatement.setString(3, user.getUsername());
-            preparedStatement.setString(4, user.getPassword());
-            preparedStatement.setString(5, user.getEmail());
-            preparedStatement.setString(6, user.getCUI());
-            preparedStatement.setDate(7, user.getFechaNacimiento());
-            preparedStatement.setString(8, user.getRol());
+            preparedStatement.setString(4, encriptador.encriptarContrasena(user.getPassword(),sal));
+            preparedStatement.setString(5,sal);
+            preparedStatement.setString(6, user.getEmail());
+            preparedStatement.setString(7, user.getCUI());
+            preparedStatement.setDate(8, user.getFechaNacimiento());
+            preparedStatement.setString(9, user.getRol());
 
             preparedStatement.executeUpdate();
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -100,15 +113,15 @@ public class UserDB {
         }
     }
 
-    public void crearTelefonos(String telefono, User user) {
+    public void crearTelefonos(int telefono, String user) {
         System.out.println("creando telefonos");
         String query = "INSERT INTO telefonos VALUES(NULL,?,?)";
 
 
             try (var preparedStatement = conexion.prepareStatement(query)) {
 
-                preparedStatement.setInt(1, listarCodigo(user.getUsername()));
-                preparedStatement.setString(2, telefono);
+                preparedStatement.setInt(1, listarCodigo(user));
+                preparedStatement.setInt(2, telefono);
                 preparedStatement.executeUpdate();
             }catch (SQLException e) {
                 System.out.println("Error al crear telefono : " + e);
@@ -123,42 +136,50 @@ public class UserDB {
     public void crearUsuariOEmpleador(User user, String contrasena) {
         System.out.println("creando usuario");
         String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL)";
-
+        Encriptador encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setString(1, user.getNombre());
             preparedStatement.setString(2, user.getDireccion());
             preparedStatement.setString(3, user.getUsername());
-            preparedStatement.setString(4, contrasena);
-            preparedStatement.setString(5, user.getEmail());
-            preparedStatement.setString(6, user.getCUI());
-            preparedStatement.setDate(7, user.getFechaFundacion());
-            preparedStatement.setString(8, user.getRol());
+            preparedStatement.setString(4, encriptador.encriptarContrasena(user.getPassword(), sal));
+            preparedStatement.setString(5, sal);
+            preparedStatement.setString(6, user.getEmail());
+            preparedStatement.setString(7, user.getCUI());
+            preparedStatement.setDate(8, user.getFechaFundacion());
+            preparedStatement.setString(9, user.getRol());
 
             preparedStatement.executeUpdate();
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void crearUsuariOEmpleadorAdmin(User user) {
         System.out.println("creando usuario");
-        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL)";
-
+        String query = "INSERT INTO usuarios VALUES(NULL,?,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL,false)";
+        Encriptador encriptador = new Encriptador();
+        String sal =encriptador.generarSecuencia();
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setString(1, user.getNombre());
             preparedStatement.setString(2, user.getDireccion());
             preparedStatement.setString(3, user.getUsername());
-            preparedStatement.setString(4, user.getPassword());
-            preparedStatement.setString(5, user.getEmail());
-            preparedStatement.setString(6, user.getCUI());
-            preparedStatement.setDate(7, user.getFechaFundacion());
-            preparedStatement.setString(8, user.getRol());
+            preparedStatement.setString(4, encriptador.encriptarContrasena(user.getPassword(), sal));
+            preparedStatement.setString(5, sal);
+            preparedStatement.setString(6, user.getEmail());
+            preparedStatement.setString(7, user.getCUI());
+            preparedStatement.setDate(8, user.getFechaFundacion());
+            preparedStatement.setString(9, user.getRol());
 
             preparedStatement.executeUpdate();
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -197,6 +218,26 @@ public class UserDB {
             System.out.println("Error al consultar: " + e);
         }
     }
+
+    public void cambiarContrasena(ActualizarContrasena actualizarContrasena) {
+        System.out.println("cambiar contrasena");
+        String query = "UPDATE usuarios SET password = ?, sal = ? WHERE codigo = ?";
+        Encriptador encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setString(1, encriptador.encriptarContrasena(actualizarContrasena.getContrasena(), sal));
+            preparedStatement.setString(2,  sal);
+            preparedStatement.setInt(3, actualizarContrasena.getCodigo());
+
+            preparedStatement.executeUpdate();
+        }catch (SQLException e) {
+            System.out.println("Error al consultar: " + e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
     public User comprobarCorreo(String email) {
         String query = "SELECT * FROM usuarios WHERE email=?";
         User user = null;
@@ -210,6 +251,7 @@ public class UserDB {
                     var nombre = resultSet.getString("nombre");
                     var username = resultSet.getString("username");
                     var password = resultSet.getString("password");
+                    var sal = resultSet.getString("sal");
                     var direccion = resultSet.getString("direccion");
                     var CUI = resultSet.getString("CUI");
                     var fechaFundacion = resultSet.getDate("fechaFundacion");
@@ -218,7 +260,8 @@ public class UserDB {
                     var rol = resultSet.getString("rol");
                     var mision = resultSet.getString("mision");
                     var vision = resultSet.getString("vision");
-                    user = new User(codigo,nombre,direccion,username,password,email,CUI,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision);
+                    var suspension = resultSet.getBoolean("suspension");
+                    user = new User(codigo,nombre,direccion,username,password,sal,email,CUI,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision,suspension);
                 }
             }
         }catch (SQLException e) {
@@ -227,4 +270,29 @@ public class UserDB {
         return user;
     }
 
+    public List<Notificaciones> listarNotificaciones(int usuarios) {
+        String query = "SELECT * FROM notificaciones WHERE codigoUsuario = ?";
+        List<Notificaciones> notificaciones = new ArrayList<>();
+        Notificaciones notificacion = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, usuarios);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var codigoEmpresa = resultSet.getInt("codigoEmpresa");
+                    var codigoUsuario = resultSet.getInt("codigoUsuario");
+                    var mensaje = resultSet.getString("mensaje");
+                    notificacion = new Notificaciones(codigo,codigoEmpresa, codigoUsuario,mensaje);
+                    notificaciones.add(notificacion);
+                    System.out.println(notificacion);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar notificaciones: " + e);
+        }
+
+        return  notificaciones;
+    }
 }

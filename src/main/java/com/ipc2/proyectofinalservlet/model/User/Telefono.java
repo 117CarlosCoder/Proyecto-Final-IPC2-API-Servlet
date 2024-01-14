@@ -7,7 +7,7 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 public class Telefono {
-    private String telefono1;
-    private String telefono2;
-    private String telefono3;
+    private int telefono1;
+    private int telefono2;
+    private int telefono3;
 }

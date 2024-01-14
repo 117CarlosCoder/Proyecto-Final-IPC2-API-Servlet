@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Admin.TelefonosUsuario;
+import com.ipc2.proyectofinalservlet.model.Applicant.ActualizarContrasena;
 import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
@@ -65,6 +66,8 @@ public class EmployerControler extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
+        employerService = new EmployerService(conexion);
+        employerService.actualizarEstadoOferta();
 
         if (uri.endsWith("/cargar-ofertas")) {
             List<Ofertas> ofertas = listarOfertasEmpresas(conexion, user.getCodigo());
@@ -87,6 +90,15 @@ public class EmployerControler extends HttpServlet {
             userService.enviarJson(resp,ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
+
+        if (uri.endsWith("/cargar-ofertas-entrevistas")) {
+            System.out.println(user.getCodigo());
+            List<Ofertas> ofertas = listarOfertaEntrevistas(conexion, user.getCodigo());
+            System.out.println(ofertas);
+            userService.enviarJson(resp,ofertas);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
         if (uri.endsWith("/listar-categorias")) {
             List<Categoria> categorias = listarCategorias(conexion);
             userService.enviarJson(resp, categorias);
@@ -163,6 +175,8 @@ public class EmployerControler extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
+        employerService = new EmployerService(conexion);
+        employerService.actualizarEstadoOferta();
 
         if (uri.endsWith("/completar-informacion")) {
             CompletarInformacionEmployer completarInformacionEmployer = (CompletarInformacionEmployer) userService.leerJson(resp, req, CompletarInformacionEmployer.class);
@@ -220,6 +234,8 @@ public class EmployerControler extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
+        employerService = new EmployerService(conexion);
+        employerService.actualizarEstadoOferta();
 
 
 
@@ -242,10 +258,10 @@ public class EmployerControler extends HttpServlet {
         }
 
         if (uri.endsWith("/actualizar-tarjeta")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-            CompletarInformacionEmployerTarjeta tarjeta = (CompletarInformacionEmployerTarjeta) userService.leerJson(resp,req,CompletarInformacionEmployerTarjeta.class);
+            TarjetaDatos tarjeta = (TarjetaDatos) userService.leerJson(resp,req,TarjetaDatos.class);
             if (tarjeta == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             if (!actualizarInformacionTarjeta(conexion,tarjeta, user.getCodigo())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/actualizar-telefonos")) {
@@ -255,6 +271,18 @@ public class EmployerControler extends HttpServlet {
             adminService = new AdminService(conexion);
             assert telefonos != null;
             if (!adminService.actualizarTelefono(telefonos)) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
+
+        if (uri.endsWith("/actualizar-contrasena")) {
+
+            ActualizarContrasena contrasena = (ActualizarContrasena) userService.leerJson(resp,req,ActualizarContrasena.class);
+            System.out.println("Actualizar contra " + contrasena);
+            if (contrasena == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            userService.cambiarContrasena(contrasena);
+            resp.setStatus(HttpServletResponse.SC_OK);
         }
 
     }
@@ -279,6 +307,8 @@ public class EmployerControler extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
+        employerService = new EmployerService(conexion);
+        employerService.actualizarEstadoOferta();
 
         if (uri.endsWith("/eliminar-oferta")) {
             int codigo = Integer.parseInt(req.getParameter("codigo"));
@@ -318,7 +348,7 @@ public class EmployerControler extends HttpServlet {
         return employerService.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad, fechaExpiracion, catidad);
     }
 
-    private boolean actualizarInformacionTarjeta(Connection conexion, CompletarInformacionEmployerTarjeta tarjeta, int usuario){
+    private boolean actualizarInformacionTarjeta(Connection conexion, TarjetaDatos tarjeta, int usuario){
         employerService = new EmployerService(conexion);
         return employerService.actualizarInformacionTarjeta(tarjeta, usuario);
     }
@@ -336,6 +366,11 @@ public class EmployerControler extends HttpServlet {
     public List<Ofertas> listarOfertaPostulaciones(Connection conexion, int empresa){
         employerService = new EmployerService(conexion);
         return employerService.listarOfertasEmpresaPos(empresa);
+    }
+
+    public List<Ofertas> listarOfertaEntrevistas(Connection conexion, int empresa){
+        employerService = new EmployerService(conexion);
+        return employerService.listarOfertasEmpresaEnt(empresa);
     }
 
     public TarjetaDatos listarTarjetaEmpresa(Connection conexion, int empresa){

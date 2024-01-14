@@ -24,11 +24,7 @@ import java.util.Map;
 @WebServlet(name = "ApplicantReportsServlet", urlPatterns = {"/v1/applicant-reports-servlet/*"})
 public class AplicantReports extends HttpServlet {
 
-    private ApplicantService applicantService;
-    private UserService userService ;
-    private String username;
-    private String password;
-    private User user;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String resources = "/home/carlos/Documentos/ipc2/Proyecto-Final-IPC2-API-Servlet/src/main/webapp/reportes/Aplicant/";
@@ -37,13 +33,13 @@ public class AplicantReports extends HttpServlet {
 
         String authorizationHeader = req.getHeader("Authorization");
 
-        userService = new UserService(conexion);
+        UserService userService = new UserService(conexion);
         String[] parts = userService.autorizacion(authorizationHeader,resp);
-        username = parts[0];
-        password = parts[1];
+        String username = parts[0];
+        String password = parts[1];
 
 
-        user = userService.validarUsuario(conexion,username,password,username);
+        User user = userService.validarUsuario(conexion, username, password, username);
         if (!user.getRol().equals("Solicitante")) {
             resp.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return;
@@ -56,22 +52,34 @@ public class AplicantReports extends HttpServlet {
 
         if (uri.endsWith("/oferta-sin-obtener-empleo")) {
             reporte = "OfetasSinObtenerEmpleo";
+            params.put("user",user.getCodigo());
             resp.addHeader("Content-disposition", "attachment; filename=OfetasSinObtenerEmpleo.pdf");
         }
 
         if (uri.endsWith("/oferta-fase-seleccion")) {
             reporte = "OfertasFaseSeleccionUsuario";
-            ofertasFaseSeleccion(resp,user,req);
+            params = ofertasFaseSeleccion(resp, user,req);
+            if (params.size() == 2){
+                reporte = "OfertasSeleccionUsuarioSinFechajrxml";
+            }
         }
 
         if (uri.endsWith("/oferta-fase-entrevista")) {
             reporte = "OfertasEstadoEntrevista";
-            ofertasFaseEntrevista(resp,user,req);
+
+            params = ofertasFaseEntrevista(resp, user,req);
+            if (params.size() == 2 ){
+                reporte = "OfertasEstadoEntrevistaSinFecha";
+            }
         }
 
         if (uri.endsWith("/oferta-postulacion-retirada")) {
             reporte = "fechasOfertaRetirada";
-            ofertasPostulacionRetirada(resp,user,req);
+
+            params = ofertasPostulacionRetirada(resp, user,req);
+            if (params.size() == 1){
+                reporte = "OfertasPostulacionRetiradaSinFecha";
+            }
         }
         try (InputStream inputStream = new FileInputStream(resources + reporte +".jasper");){
             resp.setContentType("application/pdf");
@@ -97,12 +105,20 @@ public class AplicantReports extends HttpServlet {
         System.out.println(estado);
         System.out.println(user.getCodigo());
 
-        resp.addHeader("Content-disposition", "attachment; filename=OfertasFaseSeleccionUsuario.pdf");
         Map<String, Object> params = new HashMap<>();
-        params.put("estado", estado);
-        params.put("user", user.getCodigo());
-        params.put("fechaA", fechaA);
-        params.put("fechaB", fechaB);
+
+        if (fechaA.isEmpty() || fechaB.isEmpty() || estado.isEmpty()){
+            resp.addHeader("Content-disposition", "attachment; filename=OfertasFaseSeleccionUsuario.pdf");
+            params.put("estado", estado);
+            params.put("user", user.getCodigo());
+        }else{
+            resp.addHeader("Content-disposition", "attachment; filename=OfertasFaseSeleccionUsuario.pdf");
+            params.put("estado", estado);
+            params.put("user", user.getCodigo());
+            params.put("fechaA", fechaA);
+            params.put("fechaB", fechaB);
+        }
+
 
         return params;
     }
@@ -115,13 +131,19 @@ public class AplicantReports extends HttpServlet {
         System.out.println(fechaB);
         System.out.println(estado);
         System.out.println(user.getCodigo());
-
-        resp.addHeader("Content-disposition", "attachment; filename=OfertasEstadoEntrevista.pdf");
         Map<String, Object> params = new HashMap<>();
-        params.put("estado", estado);
-        params.put("user", user.getCodigo());
-        params.put("fechaA", fechaA);
-        params.put("fechaB", fechaB);
+        if (fechaA.isEmpty() || fechaB.isEmpty() ){
+            resp.addHeader("Content-disposition", "attachment; filename=OfertasEstadoEntrevista.pdf");
+            params.put("estado", estado);
+            params.put("user", user.getCodigo());
+        }else {
+
+            resp.addHeader("Content-disposition", "attachment; filename=OfertasEstadoEntrevista.pdf");
+            params.put("estado", estado);
+            params.put("user", user.getCodigo());
+            params.put("fechaA", fechaA);
+            params.put("fechaB", fechaB);
+        }
 
         return params;
     }
@@ -132,12 +154,19 @@ public class AplicantReports extends HttpServlet {
         System.out.println(fechaA);
         System.out.println(fechaB);
         System.out.println(user.getCodigo());
-
-        resp.addHeader("Content-disposition", "attachment; filename=fechasOfertaRetirada.pdf");
         Map<String, Object> params = new HashMap<>();
-        params.put("user", user.getCodigo());
-        params.put("fechaA", fechaA);
-        params.put("fechaB", fechaB);
+        if (fechaA.isEmpty() || fechaB.isEmpty()){
+            resp.addHeader("Content-disposition", "attachment; filename=fechasOfertaRetirada.pdf");
+
+            params.put("user", user.getCodigo());
+        }else {
+
+            resp.addHeader("Content-disposition", "attachment; filename=fechasOfertaRetirada.pdf");
+
+            params.put("user", user.getCodigo());
+            params.put("fechaA", fechaA);
+            params.put("fechaB", fechaB);
+        }
 
         return params;
     }

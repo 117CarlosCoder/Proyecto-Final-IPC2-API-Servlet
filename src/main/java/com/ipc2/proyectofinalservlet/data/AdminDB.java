@@ -39,7 +39,7 @@ public class AdminDB {
     }
 
     public void crearComision(BigDecimal comision, String fecha){
-        String query = "INSERT INTO historialComision VALUES(?,?,?)";
+        String query = "INSERT INTO historialComision VALUES(?,?,?,NOW())";
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1, Types.NULL);
             preparedStatement.setBigDecimal(2,comision);
@@ -96,7 +96,7 @@ public class AdminDB {
     }
 
     public List<RegistroComision> listarRegistroComision(){
-        String query = "SELECT * FROM historialComision";
+        String query = " SELECT * FROM historialComision ORDER BY codigo DESC";
         List<RegistroComision> registroComisions = new ArrayList<>();
         RegistroComision registroComision = null;
         try(var select = conexion.prepareStatement(query)) {
@@ -104,8 +104,9 @@ public class AdminDB {
             while (resultset.next()) {
                 var codigo = resultset.getInt("codigo");
                 var comision = resultset.getBigDecimal("comision");
-                var fecha = resultset.getString("fecha");
-                registroComision = new RegistroComision(codigo,comision,fecha);
+                var fechaInicial = resultset.getString("fechaInicial");
+                var fechaFinal = resultset.getString("fechaFinal");
+                registroComision = new RegistroComision(codigo,comision,fechaInicial, fechaFinal);
                 registroComisions.add(registroComision);
             }
 
@@ -152,7 +153,7 @@ public class AdminDB {
     }
 
     public CantidadTotal ofertaTotalFecha(int categorian, String fechaA, String fechaB){
-        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS cantidadTotal FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' AND o.categoria = ? AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY cantidadTotal DESC LIMIT 5";
+        String query = "SELECT IFNULL(SUM(c.cobro), 0) AS cantidadTotal, IFNULL(g.nombre, 'Todas') AS 'categoria' FROM cobroComision c INNER JOIN categoria g ON g.codigo = c.categoria WHERE c.categoria = ? AND c.fecha BETWEEN ? AND ? GROUP BY g.nombre";
         CantidadTotal cantidadTotal = null;
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -197,15 +198,20 @@ public class AdminDB {
     }
 
     public List<IngresoTotal> ingresoTotalFecha(String fechaA, String fechaB){
-        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cantidad) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobros s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
+        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5";
+        if (fechaA == null || fechaA.isEmpty()|| fechaB == null|| fechaB.isEmpty()){
+            System.out.println("otra query");
+            query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5";
+        }
         List<IngresoTotal> ingresoTotals = new ArrayList<>();
         IngresoTotal ingresoTotal = null;
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
-            preparedStatement.setDate(1, Date.valueOf(fechaA));
-            preparedStatement.setDate(2, Date.valueOf(fechaB));
-
+            if ((fechaA != null) & !fechaA.isEmpty() & (fechaB != null) & !fechaB.isEmpty()) {
+                preparedStatement.setDate(1, Date.valueOf(fechaA));
+                preparedStatement.setDate(2, Date.valueOf(fechaB));
+            }
 
 
             try (var resultSet = preparedStatement.executeQuery()) {
@@ -226,7 +232,7 @@ public class AdminDB {
     }
 
     public List<IngresoTotal> ingresoTotalSinFecha(String fechaA, String fechaB){
-        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cantidad) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobros s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
+        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
         List<IngresoTotal> ingresoTotals = new ArrayList<>();
         IngresoTotal ingresoTotal = null;
 
@@ -299,8 +305,7 @@ public class AdminDB {
     }
 
     public void actualizarUsuario(User usuario){
-        String query = "UPDATE usuarios SET CUI=?,curriculum=?,direccion=?,email=?,fechaFundacion=?,fechaNacimiento=?,mision=?,nombre=?,password=?,username=?,vision=? where codigo=?";
-        encriptador = new Encriptador();
+        String query = "UPDATE usuarios SET CUI=?,curriculum=?,direccion=?,email=?,fechaFundacion=?,fechaNacimiento=?,mision=?,nombre=?,username=?,vision=? where codigo=?";
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setString(1,usuario.getCUI());
             preparedStatement.setString(2,usuario.getCurriculum());
@@ -310,14 +315,13 @@ public class AdminDB {
             preparedStatement.setDate(6,usuario.getFechaNacimiento());
             preparedStatement.setString(7,usuario.getMision());
             preparedStatement.setString(8,usuario.getNombre());
-            preparedStatement.setString(9, encriptador.encriptarContrasena(usuario.getPassword(), encriptador.generarSecuencia()));
-            preparedStatement.setString(10,usuario.getUsername());
-            preparedStatement.setString(11,usuario.getVision());
-            preparedStatement.setInt(12,usuario.getCodigo());
+            preparedStatement.setString(9,usuario.getUsername());
+            preparedStatement.setString(10,usuario.getVision());
+            preparedStatement.setInt(11,usuario.getCodigo());
 
             preparedStatement.executeUpdate();
 
-        } catch (SQLException | NoSuchAlgorithmException e ) {
+        } catch (SQLException e ) {
             throw new RuntimeException(e);
         }
     }
@@ -427,13 +431,14 @@ public class AdminDB {
                     var direccion = resultSet.getString("direccion");
                     var username = resultSet.getString("username");
                     var password = resultSet.getString("password");
+                    var sal = resultSet.getString("sal");
                     var email = resultSet.getString("email");
                     var CUI = resultSet.getString("CUI");
                     var fechaNacimiento = resultSet.getDate("fechaNacimiento");
                     var fechaFundacion= resultSet.getDate("fechaFundacion");
                     var curriculum = resultSet.getString("curriculum");
                     var suspension = resultSet.getBoolean("suspension");
-                    usuario = new Usuarios(codigo,nombre,direccion,username,password,"",email,CUI, fechaNacimiento,fechaFundacion,new String[]{}, curriculum,null, suspension);
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,sal,email,CUI, fechaNacimiento,fechaFundacion,new String[]{}, curriculum,null, suspension);
 
                 }
             }

@@ -6,6 +6,7 @@ import com.ipc2.proyectofinalservlet.model.Admin.Dashboard;
 import com.ipc2.proyectofinalservlet.model.Admin.RegistroComision;
 import com.ipc2.proyectofinalservlet.model.Admin.TelefonosUsuario;
 import com.ipc2.proyectofinalservlet.model.Admin.UsuarioCreacion;
+import com.ipc2.proyectofinalservlet.model.Applicant.ActualizarContrasena;
 import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
@@ -173,7 +174,7 @@ public class AdminController extends HttpServlet {
             RegistroComision registroComision = (RegistroComision) userService.leerJson(resp,req,RegistroComision.class);
             if (registroComision == null)  resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             assert registroComision != null;
-            if(!registrarComision(conexion,registroComision.getComision(),registroComision.getFecha())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if(!registrarComision(conexion,registroComision.getComision(),registroComision.getFechaInicial())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
         if (uri.endsWith("/crear-usuarios")) {
@@ -182,7 +183,7 @@ public class AdminController extends HttpServlet {
             if (usuario == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             assert usuario != null;
             if (!crearUsuario(conexion,usuario.getUsuario())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            crearTelefonosUser(conexion,usuario.getUsuario(),usuario.getTelefonos());
+            crearTelefonosUser(conexion,usuario.getUsuario().getUsername(),usuario.getTelefonos());
 
         }
 
@@ -254,7 +255,17 @@ public class AdminController extends HttpServlet {
         }
 
 
+        if (uri.endsWith("/actualizar-contrasena")) {
 
+            ActualizarContrasena contrasena = (ActualizarContrasena) userService.leerJson(resp,req,ActualizarContrasena.class);
+            System.out.println("Actualizar contra " + contrasena);
+            if (contrasena == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            userService.cambiarContrasena(contrasena);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
 
     }
 
@@ -316,7 +327,7 @@ public class AdminController extends HttpServlet {
         adminService.crearTelefonosUsarioP2(numTelefonos);
     }
 
-    private void crearTelefonosUser(Connection conexion, User user, Telefono telefono){
+    private void crearTelefonosUser(Connection conexion, String user, Telefono telefono){
         System.out.println("CrearTelefono");
         userService = new UserService(conexion);
         System.out.println("Usuario : "+ user);

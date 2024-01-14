@@ -198,6 +198,18 @@ public class ApplicantController extends HttpServlet{
             adminService.crearTelefonosUsarioP2(telefono);
 
         }
+
+        if (uri.endsWith("/actualizar-contrasena")) {
+
+            ActualizarContrasena contrasena = (ActualizarContrasena) userService.leerJson(resp,req,ActualizarContrasena.class);
+            System.out.println("Actualizar contra " + contrasena);
+            if (contrasena == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            userService.cambiarContrasena(contrasena);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
     }
 
     @Override
@@ -224,9 +236,11 @@ public class ApplicantController extends HttpServlet{
         if (uri.endsWith("/actualizar-usuario")) {
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
             User usuario = (User) userService.leerJson(resp,req,User.class);
-            if (usuario == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (usuario == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
             adminService = new AdminService(conexion);
-            assert usuario != null;
             if (!adminService.actualizarUsuario(usuario)) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
@@ -238,6 +252,8 @@ public class ApplicantController extends HttpServlet{
             assert telefonos != null;
             if (!adminService.actualizarTelefono(telefonos))resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
+
+
     }
 
     public List<Categoria> listarCategorias(Connection conexion){

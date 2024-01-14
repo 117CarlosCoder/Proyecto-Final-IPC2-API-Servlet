@@ -463,14 +463,18 @@ public class ApplicantDB    {
 
     public List<RegistroPostulacion> listarRegistros(int usuarioN, String fechaA, String fechaB) {
         String query = " SELECT * FROM postulacionRetirada WHERE usuario=? AND fecha BETWEEN ? AND ?";
+        if (fechaA.isEmpty() || fechaB.isEmpty()){
+            query = " SELECT * FROM postulacionRetirada WHERE usuario=? ";
+        }
         List<RegistroPostulacion> registroPostulacions = new ArrayList<>();
         RegistroPostulacion registroPostulacion = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
-
             preparedStatement.setInt(1, usuarioN);
-            preparedStatement.setString(2, fechaA);
-            preparedStatement.setString(3, fechaB);
+            if (!fechaA.isEmpty() && !fechaB.isEmpty()) {
 
+                preparedStatement.setString(2, fechaA);
+                preparedStatement.setString(3, fechaB);
+            }
 
 
             try (var resultSet = preparedStatement.executeQuery()) {
@@ -532,7 +536,7 @@ public class ApplicantDB    {
     }
 
     public List<OfertaCostos> listarOfertasCostos(int usuarioN) {
-        String query = "SELECT e.codigo,o.nombre AS 'Oferta' ,u.nombre AS 'Empresa',e.estado,c.cantidad FROM comision c ,entrevistas e INNER JOIN ofertas o ON o.codigo =  e.codigoOferta INNER JOIN usuarios u ON u.codigo = o.empresa WHERE e.usuario = ? AND o.fechaLimite >= CURDATE() AND s.estado IN ('ENTREVISTA','ACTIVA') AND o.usuarioElegido = 0";
+        String query = "SELECT e.codigo,o.nombre AS 'Oferta' ,u.nombre AS 'Empresa',e.estado,c.cantidad FROM comision c ,entrevistas e INNER JOIN ofertas o ON o.codigo =  e.codigoOferta INNER JOIN usuarios u ON u.codigo = o.empresa WHERE e.usuario = ? AND o.fechaLimite >= CURDATE() AND o.estado IN ('ENTREVISTA','ACTIVA') AND o.usuarioElegido = 0";
         List<OfertaCostos> ofertasCostos = new ArrayList<>();
         OfertaCostos ofertaCostos = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -626,14 +630,19 @@ public class ApplicantDB    {
 
     public List<OfertasEmpresaFecha> listarOfertasFecha(int usuario,String estadon, String fechaA, String fechaB) {
         String query = "SELECT o.* FROM ofertas o INNER JOIN solicitudes s ON s.codigoOferta = o.codigo WHERE o.estado=? AND s.usuario=? AND fechaPublicacion BETWEEN ? AND ? AND o.usuarioElegido = 0 ";
+        if (fechaA.isEmpty() || fechaB.isEmpty()){
+            query = "SELECT o.* FROM ofertas o INNER JOIN solicitudes s ON s.codigoOferta = o.codigo WHERE o.estado=? AND s.usuario=?  AND o.usuarioElegido = 0 ";
+        }
         List<OfertasEmpresaFecha> ofertas = new ArrayList<>();
         OfertasEmpresaFecha oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
-
             preparedStatement.setString(1, estadon);
             preparedStatement.setInt(2, usuario);
-            preparedStatement.setDate(3, Date.valueOf(fechaA));
-            preparedStatement.setDate(4, Date.valueOf(fechaB));
+            if (!fechaA.isEmpty() && !fechaB.isEmpty()){
+                preparedStatement.setDate(3, Date.valueOf(fechaA));
+                preparedStatement.setDate(4, Date.valueOf(fechaB));
+            }
+
 
 
             try (var resultSet = preparedStatement.executeQuery()) {

@@ -3,6 +3,9 @@ package com.ipc2.proyectofinalservlet.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ipc2.proyectofinalservlet.data.UserDB;
+import com.ipc2.proyectofinalservlet.model.Applicant.ActualizarContrasena;
+import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
+import com.ipc2.proyectofinalservlet.model.User.Notificaciones;
 import com.ipc2.proyectofinalservlet.model.User.Telefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +21,7 @@ import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Base64;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 
@@ -44,14 +48,14 @@ public class UserService  {
         }
     }
 
-    public void crearTelefono(Telefono telefono, User user) {
-        if ((telefono.getTelefono1() != null)){
+    public void crearTelefono(Telefono telefono, String user) {
+        if ((telefono.getTelefono1() != 0)){
             usuarioDB.crearTelefonos( telefono.getTelefono1(), user);
         }
-        if ((telefono.getTelefono2() != null)){
+        if ((telefono.getTelefono2() != 0)){
             usuarioDB.crearTelefonos( telefono.getTelefono2(), user);
         }
-        if ((telefono.getTelefono3() != null)){
+        if ((telefono.getTelefono3() != 0)){
             usuarioDB.crearTelefonos( telefono.getTelefono3(), user);
         }
 
@@ -66,7 +70,7 @@ public class UserService  {
 
     public boolean crearUsuarioEmpleador(User user) {
         System.out.println("Craer Usuario");
-        if (user.getUsername().isEmpty()  || user.getPassword().isEmpty() || user.getNombre().isEmpty() || user.getCUI().isEmpty() || Integer.parseInt(user.getCUI()) == 0 || user.getEmail().isEmpty() || user.getDireccion().isEmpty()) return false;
+        if (user.getUsername().isEmpty()  || user.getPassword().isEmpty() || user.getNombre().isEmpty() || user.getCUI().isEmpty() || user.getCUI() == "0" || user.getEmail().isEmpty() || user.getDireccion().isEmpty()) return false;
         boolean valor = false;
         if (user.getRol().equals("Empleador")){
             valor=true;
@@ -176,5 +180,15 @@ public class UserService  {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         objectMapper.writeValue(resp.getWriter(), valor);
         resp.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+    }
+
+    public List<Notificaciones> listarNotificaciones(int usuario){
+        System.out.println("listar notificaciones");
+        return usuarioDB.listarNotificaciones(usuario);
+    }
+
+    public void cambiarContrasena(ActualizarContrasena actualizarContrasena){
+        System.out.println("cambiar cotrasena");
+        usuarioDB.cambiarContrasena(actualizarContrasena);
     }
 }

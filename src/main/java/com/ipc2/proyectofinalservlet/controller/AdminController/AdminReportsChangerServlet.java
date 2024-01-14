@@ -107,8 +107,15 @@ public class AdminReportsChangerServlet extends HttpServlet {
     }
 
     public void obtenerParametros(HttpServletRequest req){
-        fechaA = req.getParameter("fechaA");
-        fechaB = req.getParameter("fechaB");
+        try {
+            fechaA = req.getParameter("fechaA");
+            fechaB = req.getParameter("fechaB");
+        }catch (Exception e){
+            System.out.println(e);
+            fechaA = "";
+            fechaB = "";
+        }
+
         try {
             categoria = Integer.parseInt(req.getParameter("categoria"));
         }catch (Exception e){

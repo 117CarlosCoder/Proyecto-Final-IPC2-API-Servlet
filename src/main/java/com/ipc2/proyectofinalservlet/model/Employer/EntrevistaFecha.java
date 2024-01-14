@@ -15,4 +15,5 @@ public class EntrevistaFecha {
     private String fecha;
     private String Empresa;
     private String estado;
+    private String usuario;
 }

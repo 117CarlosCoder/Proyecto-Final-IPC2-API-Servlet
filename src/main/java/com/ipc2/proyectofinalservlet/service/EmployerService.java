@@ -33,9 +33,9 @@ public class EmployerService {
         return true;
     }
 
-    public boolean actualizarInformacionTarjeta(CompletarInformacionEmployerTarjeta tarjeta, int usuario){
+    public boolean actualizarInformacionTarjeta(TarjetaDatos tarjeta, int usuario){
         System.out.println("Actualizar Informacion Tarjeta");
-        if (tarjeta.getTitular().isEmpty() || tarjeta.getNumero() == 0 || tarjeta.getCantidad().compareTo(BigDecimal.ZERO) < 0 || tarjeta.getCodigoSeguridad() == 0 || tarjeta.getFechaExpiracion() != null || tarjeta.getCodigoUsuario() == 0) return false;
+        if (tarjeta.getTitular().isEmpty() || tarjeta.getNumero().compareTo(BigDecimal.ZERO) <= 0|| tarjeta.getCantidad().compareTo(BigDecimal.ZERO) <= 0 || tarjeta.getCodigoSeguridad() == 0 || tarjeta.getFechaExpiracion() == null ) return false;
         employerDB.actualizarInformacionTarjeta(tarjeta, usuario);
         return true;
     }
@@ -65,6 +65,11 @@ public class EmployerService {
         employerDB.actualizarOfertaEstado(codigo);
         return true;
     }
+
+    public void crearNotificacion(String mensaje, int empresa, int usuario){
+        System.out.println("crear notificacion");
+        employerDB.crearNotificacion(mensaje, empresa, usuario);
+    }
     public List<Ofertas> listarOfertas(){
         System.out.println("listar ofertas");
         return employerDB.listarOfertas();
@@ -90,14 +95,19 @@ public class EmployerService {
         return employerDB.listarOfertasEmpresaPostulaciones(empresa);
     }
 
+    public List<Ofertas> listarOfertasEmpresaEnt(int empresa){
+        System.out.println("listar ofertas Empresa");
+        return employerDB.listarOfertasEmpresaEntrevistas(empresa);
+    }
+
     public List<Ofertas> listarOfertasEmpresaPostulaciones(int empresa){
         System.out.println("listar ofertas Empresa Postulaciones");
         return employerDB.listarOfertasEmpresaPostulantes(empresa);
     }
 
-    public List<EstadoSolicitudPostulante> listarPostulaciones(int codigo){
+    public List<EstadoSolicitudPostulante> listarPostulaciones(int codigo, int empresa){
         System.out.println("listar Postulaciones");
-        return employerDB.listarPostulaciones(codigo);
+        return employerDB.listarPostulaciones(codigo,empresa);
     }
 
     public Postulante obtenerPostulante(int usuario, int oferta){
@@ -116,6 +126,11 @@ public class EmployerService {
     }
 
     public List<EntrevistaInfo> listarEntrevistas(int empresa)   {
+        System.out.println("listar entrevista");
+        return employerDB.listarEntrevista(empresa);
+    }
+
+    public List<EntrevistaInfo> listarEntrevistasContratacion(int empresa)   {
         System.out.println("listar entrevista");
         return employerDB.listarEntrevista(empresa);
     }
@@ -185,5 +200,13 @@ public class EmployerService {
         estadoOferta = new EstadoOferta(EstadosOfertas.ENTREVISTA.toString());
         estadoOfertas.add(estadoOferta);
         return estadoOfertas;
+    }
+
+    public void actualizarEstadoOferta(){
+        employerDB.actualizarEstadoOferta();
+    }
+
+    public void faseEntrevista(int codigo, int empresa){
+        employerDB.faseEntrevistas(codigo, empresa);
     }
 }

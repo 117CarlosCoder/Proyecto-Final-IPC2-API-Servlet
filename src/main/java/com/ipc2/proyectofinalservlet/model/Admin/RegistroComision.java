@@ -12,5 +12,6 @@ import java.math.BigDecimal;
 public class RegistroComision {
     private int codigo;
     private BigDecimal comision;
-    private String fecha;
+    private String fechaInicial;
+    private String fechaFinal;
 }

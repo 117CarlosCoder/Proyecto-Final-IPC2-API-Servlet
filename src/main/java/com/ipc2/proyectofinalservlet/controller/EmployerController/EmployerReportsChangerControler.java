@@ -50,6 +50,8 @@ public class EmployerReportsChangerControler extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
+        employerService = new EmployerService(conexion);
+        employerService.actualizarEstadoOferta();
 
 
         if (uri.endsWith("/ofertas-costos")) {

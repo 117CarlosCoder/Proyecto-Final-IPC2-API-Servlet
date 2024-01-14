@@ -332,7 +332,7 @@ public class CargaDB {
     }
 
     public Comision crearComision(BigDecimal cantidadE){
-        String query = "INSERT INTO comision VALUES(1,?)";
+        String query = "INSERT INTO comision VALUES(1,?,NOW())";
         Comision comision = null;
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setBigDecimal(1,cantidadE);
@@ -397,7 +397,7 @@ public class CargaDB {
                 var fechaFundacion = resultset.getDate("fechaFundacion");
                 var mision = "";
                 var vision ="";
-                user = new User(codigo, nombre,direccion,username,password,email,cui,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision);
+                user = new User(codigo, nombre,direccion,username,password,"",email,cui,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision,false);
                 users.add(user);
             }
 
