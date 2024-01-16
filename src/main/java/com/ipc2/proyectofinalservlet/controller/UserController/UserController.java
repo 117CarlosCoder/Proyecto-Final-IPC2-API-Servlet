@@ -106,7 +106,9 @@ public class UserController extends HttpServlet {
             String username = req.getParameter("username");
             System.out.println(username);
             Telefono telefono = (Telefono) userService.leerJson(resp,req, Telefono.class);
+            Telefono telefono2 = readJsonTelefonos(resp,req);
             System.out.println(telefono);
+            System.out.println(telefono2);
             crearTelefonos(connection, username, telefono);
         }
 
@@ -182,7 +184,6 @@ public class UserController extends HttpServlet {
         if (email!=null){
             if (comprobarEmail(connection,email)) {
                 resp.setStatus(HttpServletResponse.SC_CREATED);
-                conexion.desconectar(connection);
             }
         }
         else {

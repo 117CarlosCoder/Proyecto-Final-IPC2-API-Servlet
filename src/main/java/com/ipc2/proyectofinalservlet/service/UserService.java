@@ -40,13 +40,8 @@ public class UserService  {
     public void crearUsuarioSolicitante(User user, boolean valor, HttpServletResponse resp) {
         System.out.println("Crer Usuario");
 
-        if (valor){
             usuarioDB.crearUsuarioSolicitanteAdmin(user);
-        }else {
-            String contresena = generarContrasena(8);
-            usuarioDB.crearUsuarioSolicitante(user, contresena, resp);
-            enviarConGMail(user.getEmail(), "EmpleoGt", "Hola Bienvenido a EmpleoGT esta es su contraseña : " + contresena);
-        }
+
     }
 
     public void crearTelefono(Telefono telefono, String user) {
@@ -72,19 +67,12 @@ public class UserService  {
     public boolean crearUsuarioEmpleador(User user) {
         System.out.println("Craer Usuario");
         if (user.getUsername().isEmpty()  || user.getPassword().isEmpty() || user.getNombre().isEmpty() || user.getCUI().isEmpty() || user.getCUI() == "0" || user.getEmail().isEmpty() || user.getDireccion().isEmpty()) return false;
-        boolean valor = false;
+
         if (user.getRol().equals("Empleador")){
-            valor=true;
             usuarioDB.crearUsuariOEmpleadorAdmin(user);
         }
         if (user.getRol().equals("Solicitante")){
-            valor=true;
             usuarioDB.crearUsuarioSolicitanteAdmin(user);
-        }
-        if(!valor) {
-            String contrasena = generarContrasena(8);
-            usuarioDB.crearUsuariOEmpleador(user, contrasena);
-            enviarConGMail(user.getEmail(), "EmpleoGt", "Hola Bienvenido a EmpleoGT esta es su contraseña : " + contrasena);
         }
         return true;
     }

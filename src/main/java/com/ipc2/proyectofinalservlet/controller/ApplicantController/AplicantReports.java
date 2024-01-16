@@ -3,6 +3,7 @@ package com.ipc2.proyectofinalservlet.controller.ApplicantController;
 import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
+import com.ipc2.proyectofinalservlet.service.EmployerService;
 import com.ipc2.proyectofinalservlet.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -23,7 +24,10 @@ import java.util.Map;
 
 @WebServlet(name = "ApplicantReportsServlet", urlPatterns = {"/v1/applicant-reports-servlet/*"})
 public class AplicantReports extends HttpServlet {
+    private int codigo;
+    private int oferta;
 
+    private String mensaje;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -46,7 +50,12 @@ public class AplicantReports extends HttpServlet {
         }
 
         String uri = req.getRequestURI();
-
+        if (uri.endsWith("/crear-notificaciones")) {
+            obtenerParanetros(req);
+            crearNotificacion(conexion, mensaje, user.getCodigo(),codigo);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
         String reporte = "";
         Map<String, Object> params = new HashMap<>();
 
@@ -93,6 +102,9 @@ public class AplicantReports extends HttpServlet {
             e.printStackTrace(System.out);
             throw new RuntimeException(e);
         }
+
+
+
     }
 
 
@@ -169,6 +181,36 @@ public class AplicantReports extends HttpServlet {
         }
 
         return params;
+    }
+
+    public void crearNotificacion(Connection conexion, String mensaje, int empresa, int usuario){
+        EmployerService employerService = new EmployerService(conexion);
+        employerService.crearNotificacion(mensaje, empresa, usuario);
+    }
+
+    public void obtenerParanetros(HttpServletRequest req){
+        try {
+
+            oferta = Integer.parseInt(req.getParameter("oferta"));
+        }catch (Exception e){
+            System.out.println(e);
+            oferta = 0;
+        }
+
+        try {
+            codigo = Integer.parseInt(req.getParameter("codigo"));
+        }catch (Exception e){
+            System.out.println(e);
+            codigo = 0;
+        }
+        try {
+
+            mensaje = req.getParameter("mensaje");
+        }catch (Exception e){
+            System.out.println(e);
+            mensaje = "";
+        }
+
     }
 
 }

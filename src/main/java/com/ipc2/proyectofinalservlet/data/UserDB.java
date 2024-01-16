@@ -206,16 +206,20 @@ public class UserDB {
 
     public void restablecerContrasena(String email, String password) {
         System.out.println("creando usuario");
-        String query = "UPDATE usuarios SET password = ? WHERE email = ?";
-
+        String query = "UPDATE usuarios SET password = ? , sal = ? WHERE email = ?";
+        Encriptador encriptador = new Encriptador();
+        String sal = encriptador.generarSecuencia();
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
-            preparedStatement.setString(1, password);
-            preparedStatement.setString(2, email);
+            preparedStatement.setString(1, encriptador.encriptarContrasena(password,sal));
+            preparedStatement.setString(2, sal);
+            preparedStatement.setString(3, email);
 
             preparedStatement.executeUpdate();
         }catch (SQLException e) {
             System.out.println("Error al consultar: " + e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 

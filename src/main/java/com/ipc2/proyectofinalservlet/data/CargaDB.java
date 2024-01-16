@@ -319,6 +319,7 @@ public class CargaDB {
                 preparedStatement.executeUpdate();
                 crearSolicitudes(oferta.getSolicitudes(), oferta.getCodigo());
                 crearEntrevistas(oferta.getEntrevistas(), oferta.getCodigo());
+                
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
