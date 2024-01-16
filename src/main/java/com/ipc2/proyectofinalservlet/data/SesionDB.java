@@ -15,11 +15,12 @@ public class SesionDB {
     public SesionDB(Connection conexion){  this.conexion = conexion;}
 
     public String obtenerSal(String username){
-        String query = "SELECT sal FROM usuarios WHERE username = ?";
+        String query = "SELECT sal FROM usuarios WHERE username = ? OR email = ?";
         String sal = "";
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
             preparedStatement.setString(1, username);
+            preparedStatement.setString(2, username);
 
             try (var resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
@@ -35,6 +36,7 @@ public class SesionDB {
 
     public Optional<User> obtenerUsuario(String username, String password, String email) {
         System.out.println("Obteniendo usuario");
+        System.out.println(username + " "+ password+ " " + email);
         String query = "SELECT * FROM usuarios WHERE username = ? AND password = ? AND suspension = false OR email = ? AND password = ? AND suspension = false";
         User user = null;
         Encriptador encriptador = new Encriptador();

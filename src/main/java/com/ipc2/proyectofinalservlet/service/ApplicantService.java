@@ -3,6 +3,7 @@ package com.ipc2.proyectofinalservlet.service;
 import com.ipc2.proyectofinalservlet.data.ApplicantDB;
 import com.ipc2.proyectofinalservlet.model.Applicant.*;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
+import com.ipc2.proyectofinalservlet.model.Invitado.OfertaEmpresaInvitado;
 
 import java.io.InputStream;
 import java.sql.Connection;
@@ -35,9 +36,9 @@ public class ApplicantService {
 
     }
 
-    public boolean completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, Date fechaExpiracion){
+    public boolean completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, String numero, int codigoSeguridad, Date fechaExpiracion){
         System.out.println("Completar Informacion Tarjeta");
-        if (codigo != 0 || codigoUsuario != 0 || Titular.isEmpty() || numero !=0 || codigoSeguridad != 0 || fechaExpiracion != null) return false;
+        if (codigo != 0 || codigoUsuario != 0 || Titular.isEmpty() || numero.equals("0") || codigoSeguridad != 0 || fechaExpiracion != null) return false;
         applicantDB.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad,fechaExpiracion);
         return true;
     }
@@ -63,6 +64,11 @@ public class ApplicantService {
     public List<OfertasEmpresa> listarOfeta(int usuarion){
         System.out.println("Listar Ofertas");
         return applicantDB.listarOfertas(usuarion);
+    }
+
+    public OfertaEmpresaInvitado listarOfertasCodigoEmpleo(int usuarion){
+        System.out.println("Listar Ofertas");
+        return applicantDB.listarOfertasCodigoOf(usuarion);
     }
 
     public OfertasEmpresa listarOfetaCodigo(int codigo, int usuarion){

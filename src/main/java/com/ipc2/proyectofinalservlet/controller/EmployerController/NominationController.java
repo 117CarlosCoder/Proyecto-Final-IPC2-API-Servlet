@@ -59,17 +59,23 @@ public class NominationController extends HelloServlet {
         }
 
         if (uri.endsWith("/cargar-entrevistas")) {
+            obtenerParanetros(req);
             resp.setStatus(HttpServletResponse.SC_OK);
-            List<EntrevistaInfo> entrevistas = listarEntrevistas(conexion, user.getCodigo());
+            List<EntrevistaInfo> entrevistas = listarEntrevistas(conexion,codigo, user.getCodigo());
             userService.enviarJson(resp,entrevistas);
 
         }
 
         if (uri.endsWith("/cargar-entrevistas-contratacion")) {
-            resp.setStatus(HttpServletResponse.SC_OK);
-            List<EntrevistaInfo> entrevistas = listarEntrevistasContratacion(conexion, user.getCodigo());
-            userService.enviarJson(resp,entrevistas);
+            obtenerParanetros(req);
 
+            System.out.println(codigo);
+            List<EntrevistaInfo> entrevistas = listarEntrevistasContratacion(conexion,codigo, user.getCodigo());
+            if (entrevistas.isEmpty()){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }
+            userService.enviarJson(resp,entrevistas);
+            resp.setStatus(HttpServletResponse.SC_OK);
         }
 
         if (uri.endsWith("/crear-notificaciones")) {
@@ -80,7 +86,20 @@ public class NominationController extends HelloServlet {
 
         if (uri.endsWith("/fase-entrevista")) {
             obtenerParanetros(req);
-            employerService.faseEntrevista(codigo, user.getCodigo());
+            if (!employerService.faseEntrevista(codigo, user.getCodigo())){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
+        if (uri.endsWith("/fase-contratacion")) {
+            obtenerParanetros(req);
+            if (!employerService.faseContratacion(codigo, user.getCodigo())){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_OK);
         }
 
 
@@ -217,14 +236,14 @@ public class NominationController extends HelloServlet {
         employerService.generarEntrevista(codigo,codigoOferta,usuario,fecha,hora,ubicacion);
     }
 
-    public List<EntrevistaInfo> listarEntrevistas(Connection conexion, int empresa){
+    public List<EntrevistaInfo> listarEntrevistas(Connection conexion, int codigo, int empresa){
         employerService = new EmployerService(conexion);
-        return employerService.listarEntrevistas(empresa);
+        return employerService.listarEntrevistas(codigo,empresa);
     }
 
-    public List<EntrevistaInfo> listarEntrevistasContratacion(Connection conexion, int empresa){
+    public List<EntrevistaInfo> listarEntrevistasContratacion(Connection conexion,int codigo, int empresa){
         employerService = new EmployerService(conexion);
-        return employerService.listarEntrevistasContratacion(empresa);
+        return employerService.listarEntrevistasContratacion(codigo,empresa);
     }
 
     public boolean finalizarEntrevista(Connection conexion,String notas,int usuario, int codigo){

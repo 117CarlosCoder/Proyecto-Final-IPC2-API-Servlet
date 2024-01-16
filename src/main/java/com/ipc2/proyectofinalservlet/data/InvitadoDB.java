@@ -21,7 +21,7 @@ public class InvitadoDB {
     }
 
     public List<OfertasEmpresa> listarOfertas() {
-        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo WHERE s.fechaLimite >= CURDATE() AND s.estado IN ('ENTREVISTA','ACTIVA') AND s.usuarioElegido = 0;";
+        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo WHERE s.fechaLimite >= CURDATE() AND s.estado = 'ACTIVA' AND s.usuarioElegido = 0";
         List<OfertasEmpresa> ofertas = new ArrayList<>();
         OfertasEmpresa oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -52,7 +52,7 @@ public class InvitadoDB {
     }
 
     public List<OfertasEmpresa> listarOfertasEmpresa(int empresan) {
-        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo WHERE s.fechaLimite >= CURDATE() AND s.estado IN ('ENTREVISTA','ACTIVA') AND s.usuarioElegido = 0 AND s.empresa = ?";
+        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo WHERE s.fechaLimite > CURDATE() AND s.estado = 'ACTIVA' AND s.usuarioElegido = 0 AND s.empresa = ? AND o.rol='Empleador'";
         List<OfertasEmpresa> ofertas = new ArrayList<>();
         OfertasEmpresa oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -83,7 +83,7 @@ public class InvitadoDB {
     }
 
     public OfertaInformacion listarEmpresa(int empresan) {
-        String query = " SELECT o.nombre, o.mision, o.vision FROM usuarios o WHERE o.codigo = ? ";
+        String query = " SELECT o.nombre, o.mision, o.vision FROM usuarios o WHERE o.codigo = ? AND o.rol='Empleador' ";
 
         OfertaInformacion oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -104,7 +104,7 @@ public class InvitadoDB {
     }
 
     public List<OfertasEmpresa> listarOfertasFiltros(Filtros filtros) {
-        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo WHERE s.nombre LIKE ? AND s.fechaLimite >= CURDATE() AND s.estado IN ('ENTREVISTA','ACTIVA') AND s.usuarioElegido = 0";
+        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo WHERE s.nombre LIKE ? AND s.fechaLimite >= CURDATE() AND s.estado = 'ACTIVA' AND s.usuarioElegido = 0";
         List<OfertasEmpresa> ofertas = new ArrayList<>();
         OfertasEmpresa oferta = null;
         if (filtros.getCategoria() != null && !filtros.getCategoria().isEmpty()) {
@@ -163,7 +163,7 @@ public class InvitadoDB {
     }
 
     public OfertaEmpresaInvitado listarOfertasCodigoSinEntrevista(int codigoN) {
-        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa',s.empresa AS 'codigoEmpresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo  WHERE  s.codigo = ? AND s.fechaLimite >= CURDATE() AND s.usuarioElegido = 0 ";
+        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa',s.empresa AS 'codigoEmpresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo  WHERE  s.codigo = ? AND s.fechaLimite > CURDATE() AND s.usuarioElegido = 0 AND s.estado = 'ACTIVA'";
         OfertaEmpresaInvitado oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
@@ -181,7 +181,7 @@ public class InvitadoDB {
                     var fechaPublicacion = resultSet.getDate("fechaPublicacion");
                     var fechaLimite = resultSet.getDate("fechaLimite");
                     var salario = resultSet.getBigDecimal("salario");
-                    var modalidad = resultSet.getString("salario");
+                    var modalidad = resultSet.getString("modalidad");
                     var ubicacion = resultSet.getString("ubicacion");
                     var detalles = resultSet.getString("detalles");
                     var usuarioElegido = resultSet.getInt("usuarioElegido");

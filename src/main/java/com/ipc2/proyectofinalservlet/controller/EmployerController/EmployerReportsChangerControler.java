@@ -55,7 +55,7 @@ public class EmployerReportsChangerControler extends HttpServlet {
 
 
         if (uri.endsWith("/ofertas-costos")) {
-            List<OfertaCostos> ofertaCostos = ofertaCostos(conexion);
+            List<OfertaCostos> ofertaCostos = ofertaCostos(conexion, user.getCodigo());
             userService.enviarJson(resp, ofertaCostos);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
@@ -84,9 +84,9 @@ public class EmployerReportsChangerControler extends HttpServlet {
     }
 
 
-    public List<OfertaCostos> ofertaCostos(Connection conexion){
+    public List<OfertaCostos> ofertaCostos(Connection conexion, int empresa){
         employerService = new EmployerService(conexion);
-        return employerService.listarCostosOfertas();
+        return employerService.listarCostosOfertas(empresa);
     }
 
     public List<Estado> listarEstados(Connection conexion){

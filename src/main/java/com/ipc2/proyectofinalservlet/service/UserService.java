@@ -36,6 +36,7 @@ public class UserService  {
        User user = usuarioDB.comprobarCorreo(email);
         return user != null;
     }
+
     public void crearUsuarioSolicitante(User user, boolean valor, HttpServletResponse resp) {
         System.out.println("Crer Usuario");
 
@@ -187,8 +188,10 @@ public class UserService  {
         return usuarioDB.listarNotificaciones(usuario);
     }
 
-    public void cambiarContrasena(ActualizarContrasena actualizarContrasena){
+    public boolean cambiarContrasena(ActualizarContrasena actualizarContrasena){
         System.out.println("cambiar cotrasena");
+        if (actualizarContrasena == null || actualizarContrasena.getContrasena().isEmpty())return false;
         usuarioDB.cambiarContrasena(actualizarContrasena);
+        return true;
     }
 }

@@ -9,8 +9,10 @@ import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Objects;
 
 public class AdminService {
     private final AdminDB adminDB;
@@ -21,14 +23,20 @@ public class AdminService {
 
     public boolean crearCategoria(int codigo,String nombre, String descripcion){
         System.out.println("Crear Categoria");
-        if (codigo != 0 || nombre.isEmpty() || descripcion.isEmpty()) return false;
+        if (codigo <= 0 || nombre.isEmpty() || descripcion.isEmpty()) return false;
+        List<Categoria> categorias = adminDB.listarCategorias();
+        for(Categoria categoria : categorias){
+            if (Objects.equals(categoria.getNombre(), nombre)){
+                return false;
+            }
+        }
         adminDB.crearCartegoria(codigo,nombre, descripcion);
         return true;
     }
 
     public boolean crearComision(BigDecimal comision, String fecha){
         System.out.println("Crear Comsion");
-        if (comision.compareTo(BigDecimal.ZERO) < 0 || fecha.isEmpty()) return false;
+        if (comision.compareTo(BigDecimal.ZERO) <= 0 || fecha.isEmpty()) return false;
         adminDB.crearComision(comision, fecha);
         return true;
     }
@@ -37,23 +45,32 @@ public class AdminService {
         return adminDB.listarRegistroComision();
     }
 
-    public Categoria actualizarCategoria(int codigo, String nombre, String descripcion){
+    public boolean actualizarCategoria(int codigo, String nombre, String descripcion){
         System.out.println("Actualizar Categoria");
-        if (codigo == 0 || nombre.isEmpty() || descripcion.isEmpty()){
-            return null;
+        if (codigo <= 0 || nombre.isEmpty() || descripcion.isEmpty()) return false;
+        List<Categoria> categorias = adminDB.listarCategorias();
+        for(Categoria categoria : categorias){
+            if (Objects.equals(categoria.getNombre(), nombre)){
+                return false;
+            }
         }
-        return adminDB.cambiarCategoria(codigo,nombre,descripcion);
+        adminDB.cambiarCategoria(codigo,nombre,descripcion);
+        return true;
     }
 
     public boolean actualizarTelefono(List<NumTelefono> telefono){
         System.out.println("Actualizar Telefonos");
+        System.out.println(telefono);
+        if (telefono.get(0).getNumero() <= 0) return false;
         adminDB.actualizarTelefonos(telefono.get(0));
         if (telefono.size() > 1) {
             if ((telefono.get(1)) != null) {
+                if (telefono.get(1).getNumero() <= 0) return false;
                 adminDB.actualizarTelefonos(telefono.get(1));
             }
             if (telefono.size() > 2) {
                 if ((telefono.get(2)) != null) {
+                    if (telefono.get(2).getNumero() <= 0) return false;
                     adminDB.actualizarTelefonos(telefono.get(2));
                 }
             }
@@ -106,6 +123,11 @@ public class AdminService {
         return adminDB.listarUsuarios(rol);
     }
 
+    public List<Usuarios> listarUsuariosCodigo(int codigo){
+        System.out.println("listar usuarios");
+        return adminDB.listarUsuariosCodigo(codigo);
+    }
+
     public Usuarios listarUsuarioE(int codigo){
         System.out.println("listar usuario E");
         return adminDB.listarUsuario(codigo);
@@ -117,47 +139,66 @@ public class AdminService {
     }
     public boolean actualizarUsuario(User usuario){
         System.out.println("Actualizar Usuario");
-        if (usuario.getDireccion().isEmpty() || usuario.getCodigo() == 0 || usuario.getUsername().isEmpty() || usuario.getEmail().isEmpty() || usuario.getNombre().isEmpty() || usuario.getPassword().isEmpty()) return  false;
+        if (usuario.getDireccion().isEmpty() || usuario.getCodigo() <= 0 || usuario.getUsername().isEmpty() || usuario.getEmail().isEmpty() || usuario.getNombre().isEmpty() || usuario.getCUI().isEmpty() || new BigInteger(usuario.getCUI()).compareTo(BigInteger.ZERO) <= 0  ) return  false;
         System.out.println("Actualizando");
+        List<Usuarios> usuarios = listarUsuariosCodigo(usuario.getCodigo());
+        for(Usuarios usuarion : usuarios ){
+            if (usuario.getEmail().equals(usuarion.getEmail())){
+                return false;
+            }
+        }
+        if (Objects.equals(usuario.getRol(), "Solicitante")){
+
+        }
         adminDB.actualizarUsuario(usuario);
         return true;
     }
 
 
-    public void crearTelefonos( List<NumTelefono> numTelefonos){
+    public boolean crearTelefonos( List<NumTelefono> numTelefonos){
         System.out.println("Crear Telefonos");
+        System.out.println(numTelefonos);
+        if (numTelefonos == null ) return false;
         if (!numTelefonos.isEmpty()) {
+            if (numTelefonos.get(0).getNumero() <= 0) return false;
             adminDB.crearTelefonos(numTelefonos.get(0));
 
             if (numTelefonos.size() > 1) {
                 if ((numTelefonos.get(1)) != null) {
+                    if (numTelefonos.get(1).getNumero() <= 0) return false;
                     adminDB.crearTelefonos(numTelefonos.get(1));
                 }
                 if (numTelefonos.size() > 2) {
                     if ((numTelefonos.get(2)) != null) {
+                        if (numTelefonos.get(2).getNumero() <= 0) return false;
                         adminDB.crearTelefonos(numTelefonos.get(2));
                     }
                 }
             }
         }
+        return true;
     }
 
-    public void crearTelefonosUsarioP2( List<TelefonosUsuario> numTelefonos){
+    public boolean crearTelefonosUsarioP2( List<TelefonosUsuario> numTelefonos){
         System.out.println("Crear Telefonos");
+        if (numTelefonos == null ) return false;
         if (!numTelefonos.isEmpty()) {
             adminDB.crearTelefonosUsuario(numTelefonos.get(0));
 
             if (numTelefonos.size() > 1) {
                 if ((numTelefonos.get(1)) != null) {
+                    if (numTelefonos.get(1).getNumero() <= 0) return false;
                     adminDB.crearTelefonosUsuario(numTelefonos.get(1));
                 }
                 if (numTelefonos.size() > 2) {
                     if ((numTelefonos.get(2)) != null) {
+                        if (numTelefonos.get(2).getNumero() <= 0) return false;
                         adminDB.crearTelefonosUsuario(numTelefonos.get(2));
                     }
                 }
             }
         }
+        return true;
     }
 
 
@@ -171,8 +212,4 @@ public class AdminService {
         System.out.println("suspender usuario");
         adminDB.suspenderUsuario(username, estado);
     }
-    /*public void actualizarComision(int cantidad){
-        System.out.println("Actualizar Comision");
-        adminDB.actualizarComision(cantidad);
-    }*/
 }

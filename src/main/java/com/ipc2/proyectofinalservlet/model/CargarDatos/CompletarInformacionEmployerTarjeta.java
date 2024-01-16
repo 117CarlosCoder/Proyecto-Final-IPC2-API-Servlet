@@ -14,7 +14,7 @@ public class CompletarInformacionEmployerTarjeta {
     private int codigo;
     private int codigoUsuario;
     private String Titular;
-    private int numero;
+    private String numero;
     private int codigoSeguridad;
     private Date fechaExpiracion;
     private BigDecimal cantidad;

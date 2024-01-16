@@ -44,9 +44,14 @@ public class CargarDatosController extends HttpServlet {
         Conexion conexion = new Conexion();
         Connection connection = conexion.obtenerConexion();
         List<User> users = listarUsuariosSinPDF(connection);
-        resp.setStatus(HttpServletResponse.SC_OK);
-        userService = new UserService(connection);
-        userService.enviarJson(resp, users);
+
+        try {
+            userService = new UserService(connection);
+            userService.enviarJson(resp, users);
+        }catch (Exception e){
+            System.out.println("Error al listar PDF "+ e);
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
 
 
     }
@@ -55,13 +60,17 @@ public class CargarDatosController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Conexion conexion = new Conexion();
         Connection connection = conexion.obtenerConexion();
-
         cargarDatosInicio(connection,new BigDecimal(150));
 
         String uri = req.getRequestURI();
         userService = new UserService(connection);
 
         if (uri.endsWith("/cargar-json")) {
+
+           if (validarBase(connection)) {
+               resp.setStatus(HttpServletResponse.SC_CONFLICT);
+               return;
+           }
 
         Part filePart = req.getPart("file");
         InputStream fileInputStream = filePart.getInputStream();
@@ -80,18 +89,18 @@ public class CargarDatosController extends HttpServlet {
 
         }
 
-
-        System.out.println("Calculando error2");
-
         try {
-            System.out.println("carga1");
-            System.out.println("carga2");
-            System.out.println("carga3");
+            System.out.println("carga");
             datos = gson.fromJson( jsonElement, CargarDatosFinal.class);
             System.out.println("Datos : " + datos);
+            if (datos == null){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
         } catch (Exception e) {
             System.out.println("Error al cargar datos: " + e.getMessage());
-            e.printStackTrace();
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
         }
 
         CargaDB carga = new CargaDB(connection);
@@ -106,14 +115,11 @@ public class CargarDatosController extends HttpServlet {
                 carga.cargarUsuarioSolicitante(datos.getUsuarios());
                 carga.crearOferta(datos.getOfertas());
 
-                /*if (carga.errorEncontrado()){
-                    RequestDispatcher dispatcher = req.getRequestDispatcher("/index.jsp");
-                    dispatcher.forward(req, resp);
-                    return;
-                }*/
             } catch (Exception e) {
                 System.out.println("Error al cargar datos: " + e.getMessage());
                 System.out.println("error");
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                varciarBase(connection);
                 RequestDispatcher dispatcher = req.getRequestDispatcher("/index.jsp");
                 dispatcher.forward(req, resp);
 
@@ -146,12 +152,25 @@ public class CargarDatosController extends HttpServlet {
 
     }
 
+    public void varciarBase( Connection connection){
+        System.out.println("Vaciar Base");
+        CargarDatosService cargarDatosService = new CargarDatosService(connection);
+        cargarDatosService.vaciarBSe( );
+
+    }
+
+    public boolean validarBase( Connection connection){
+        System.out.println("Validar Base");
+        CargarDatosService cargarDatosService = new CargarDatosService(connection);
+        return cargarDatosService.validarBase( );
+
+    }
+
     private List<UsuarioPdfJson> readJsonUsuarioPdfs(HttpServletResponse resp, HttpServletRequest req) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
         try {
-            List<UsuarioPdfJson> usuarioPdfList = objectMapper.readValue(req.getInputStream(), new TypeReference<>() {});
-            return usuarioPdfList;
+            return objectMapper.readValue(req.getInputStream(), new TypeReference<>() {});
         } catch (JsonParseException | JsonMappingException e) {
             System.out.println(e); // Maneja estas excepciones según tus requisitos
             return null;  // O lanza una excepción adecuada

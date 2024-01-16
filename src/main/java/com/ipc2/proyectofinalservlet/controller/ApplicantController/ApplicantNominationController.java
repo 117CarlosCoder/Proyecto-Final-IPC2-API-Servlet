@@ -6,6 +6,7 @@ import com.ipc2.proyectofinalservlet.data.Conexion;
 import com.ipc2.proyectofinalservlet.model.Applicant.RegistroPostulacion;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.EstadoSolicitud;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.OfertasEmpresa;
+import com.ipc2.proyectofinalservlet.model.Invitado.OfertaEmpresaInvitado;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
 import com.ipc2.proyectofinalservlet.service.UserService;
@@ -67,6 +68,12 @@ public class ApplicantNominationController extends HttpServlet {
                 oferta = listarOfetaPostulacionSinE(conexion, codigo, user.getCodigo());
             }
             userService.enviarJson(resp,oferta);
+            resp.setStatus(HttpServletResponse.SC_OK);
+        }
+
+        if(uri.endsWith("/listar-oferta-codigo")) {
+            OfertaEmpresaInvitado ofertas = listarOfertasCodigoEmpleo(conexion, codigo);
+            userService.enviarJson(resp,ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
     }
@@ -144,6 +151,10 @@ public class ApplicantNominationController extends HttpServlet {
         return applicantService.listarOfetaCodigoSinEntrevista(codigo,usuario);
     }
 
+    public OfertaEmpresaInvitado listarOfertasCodigoEmpleo(Connection conexion, int codigo) {
+        applicantService = new ApplicantService(conexion);
+        return applicantService.listarOfertasCodigoEmpleo(codigo);
+    }
     private void registroRetiroPostulacion(Connection conexion, int usuario, String oferta, String fecha){
         applicantService = new ApplicantService(conexion);
         applicantService.registrarPostulacion(usuario,oferta,fecha);

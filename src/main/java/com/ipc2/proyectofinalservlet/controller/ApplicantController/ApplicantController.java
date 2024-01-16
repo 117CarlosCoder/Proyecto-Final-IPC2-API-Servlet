@@ -8,6 +8,7 @@ import com.ipc2.proyectofinalservlet.model.Applicant.*;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
 import com.ipc2.proyectofinalservlet.model.Employer.Modalidades;
 import com.ipc2.proyectofinalservlet.model.Employer.NumTelefono;
+import com.ipc2.proyectofinalservlet.model.Invitado.OfertaEmpresaInvitado;
 import com.ipc2.proyectofinalservlet.model.User.User;
 import com.ipc2.proyectofinalservlet.service.AdminService;
 import com.ipc2.proyectofinalservlet.service.ApplicantService;
@@ -64,6 +65,8 @@ public class ApplicantController extends HttpServlet{
             userService.enviarJson(resp,ofertas);
             resp.setStatus(HttpServletResponse.SC_OK);
         }
+
+
 
         if(uri.endsWith("/listar-ofertas-sugerencias")) {
             System.out.println("codigo : " + user.getCodigo());
@@ -150,9 +153,14 @@ public class ApplicantController extends HttpServlet{
 
         if (uri.endsWith("/completar-informacion")) {
                 CompletarInformacionApplicant completarInformacionApplicant = (CompletarInformacionApplicant) userService.leerJson(resp, req, CompletarInformacionApplicant.class);
-                if (completarInformacionApplicant == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                assert completarInformacionApplicant != null;
-                    if (!completarInformacion(conexion, completarInformacionApplicant.getCurriculum(), user.getCodigo()))resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                if (completarInformacionApplicant == null) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+                if (!completarInformacion(conexion, completarInformacionApplicant.getCurriculum(), user.getCodigo())){
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
                 for (Integer categoria : completarInformacionApplicant.getCategorias()) {
                     crearCategorias(conexion, user.getCodigo(), categoria);
                 }
@@ -161,22 +169,37 @@ public class ApplicantController extends HttpServlet{
 
         if (uri.endsWith("/completar-informacion-tarjeta")) {
             CompletarInformacionEmployerTarjeta completarInformacionEmployerTarjeta = (CompletarInformacionEmployerTarjeta) userService.leerJson(resp, req, CompletarInformacionEmployerTarjeta.class);
-            if (completarInformacionEmployerTarjeta == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            if (!completarInformacionTarjeta(conexion, user.getCodigo(), user.getCodigo(), completarInformacionEmployerTarjeta.getTitular(),completarInformacionEmployerTarjeta.getNumero(),completarInformacionEmployerTarjeta.getCodigoSeguridad(),completarInformacionEmployerTarjeta.getFechaExpiracion())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (completarInformacionEmployerTarjeta == null){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!completarInformacionTarjeta(conexion, user.getCodigo(), user.getCodigo(), completarInformacionEmployerTarjeta.getTitular(),completarInformacionEmployerTarjeta.getNumero(),completarInformacionEmployerTarjeta.getCodigoSeguridad(),completarInformacionEmployerTarjeta.getFechaExpiracion())) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/aplicar-oferta")) {
             Solicitudes solicitudes = (Solicitudes) userService.leerJson(resp, req, Solicitudes.class);
-            if (solicitudes == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            assert solicitudes != null;
-            if (!aplicarOferta(conexion, solicitudes.getCodigoOferta(), user.getCodigo(), solicitudes.getMensaje())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (solicitudes == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!aplicarOferta(conexion, solicitudes.getCodigoOferta(), user.getCodigo(), solicitudes.getMensaje())) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
             resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/buscar-empresa")) {
             Filtros filtros = (Filtros) userService.leerJson(resp, req, Filtros.class);
-            if (filtros == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (filtros == null){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
             System.out.println("Filtros  : "+filtros);
             List<OfertasEmpresa> ofertas = listarOfertasFiltros(conexion, filtros,user.getCodigo());
             userService.enviarJson(resp,ofertas);
@@ -185,7 +208,10 @@ public class ApplicantController extends HttpServlet{
 
         if(uri.endsWith("/listar-ofertas-filtros")) {
             Filtros filtros = (Filtros) userService.leerJson(resp, req, Filtros.class);
-            if (filtros == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (filtros == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
             System.out.println("Filtros  : "+filtros);
             List<OfertasEmpresa> ofertas = listarOfertasFiltros(conexion, filtros, user.getCodigo());
             userService.enviarJson(resp, ofertas);
@@ -234,23 +260,33 @@ public class ApplicantController extends HttpServlet{
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/actualizar-usuario")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             User usuario = (User) userService.leerJson(resp,req,User.class);
             if (usuario == null) {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 return;
             }
             adminService = new AdminService(conexion);
-            if (!adminService.actualizarUsuario(usuario)) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (!adminService.actualizarUsuario(usuario)) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/actualizar-telefonos")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             List<NumTelefono> telefonos = readJsonTelefonos(resp,req);
-            if (telefonos == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (telefonos == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
             adminService = new AdminService(conexion);
-            assert telefonos != null;
-            if (!adminService.actualizarTelefono(telefonos))resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (!adminService.actualizarTelefono(telefonos)){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
 
@@ -280,6 +316,8 @@ public class ApplicantController extends HttpServlet{
         return employerService.listarModalidades();
     }
 
+
+
     public List<Ubicacion> listarUbicaciones(Connection conexion){
         applicantService = new ApplicantService(conexion);
         return applicantService.listarUbicaciones();
@@ -306,7 +344,7 @@ public class ApplicantController extends HttpServlet{
         applicantService = new ApplicantService(conexion);
         return applicantService.listarOfeta(usuarion);
     }
-    private boolean completarInformacionTarjeta(Connection conexion,int codigo, int codigoUsuario, String Titular,int numero,int codigoSeguridad, Date fechaExpiracion){
+    private boolean completarInformacionTarjeta(Connection conexion,int codigo, int codigoUsuario, String Titular,String numero,int codigoSeguridad, Date fechaExpiracion){
         applicantService = new ApplicantService(conexion);
         return applicantService.completarInformacionTarjeta(codigo,codigoUsuario,Titular,numero,codigoSeguridad, fechaExpiracion);
     }

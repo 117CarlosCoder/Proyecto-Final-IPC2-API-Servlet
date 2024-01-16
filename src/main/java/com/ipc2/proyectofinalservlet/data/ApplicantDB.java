@@ -3,6 +3,7 @@ package com.ipc2.proyectofinalservlet.data;
 import com.ipc2.proyectofinalservlet.model.Applicant.*;
 import com.ipc2.proyectofinalservlet.model.Employer.OfertaCostos;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.*;
+import com.ipc2.proyectofinalservlet.model.Invitado.OfertaEmpresaInvitado;
 import com.mysql.cj.jdbc.Blob;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -29,13 +30,13 @@ public class ApplicantDB    {
         }
     }
 
-    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, int numero, int codigoSeguridad, Date fechaExpiracion){
+    public void completarInformacionTarjeta(int codigo, int codigoUsuario, String Titular, String numero, int codigoSeguridad, Date fechaExpiracion){
         String query = "INSERT INTO tarjeta VALUES(?,?,?,?,?,?,?)";
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setInt(1, Types.NULL  );
             preparedStatement.setInt(2,codigoUsuario);
             preparedStatement.setString(3,Titular);
-            preparedStatement.setInt(4,numero);
+            preparedStatement.setString(4,numero);
             preparedStatement.setInt(5,codigoSeguridad);
             preparedStatement.setDate(6,fechaExpiracion);
             preparedStatement.setInt(7,0);
@@ -92,7 +93,7 @@ public class ApplicantDB    {
     }
 
     public List<Salario> listarSalarios(){
-        String query = "SELECT DISTINCT salario FROM ofertas;";
+        String query = "SELECT DISTINCT salario FROM ofertas";
         List<Salario> salarios = new ArrayList<>();
         Salario salario = null;
         try(var select = conexion.prepareStatement(query)) {
@@ -174,7 +175,7 @@ public class ApplicantDB    {
     }
 
     public List<OfertasEmpresa> listarOfertas(int usuarion) {
-        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta AND u.usuario = ? WHERE s.fechaLimite >= CURDATE() AND u.codigoOferta IS NULL AND s.estado IN ('ENTREVISTA','ACTIVA') AND s.usuarioElegido = 0";
+        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta AND u.usuario = ? WHERE s.fechaLimite >= CURDATE() AND u.codigoOferta IS NULL AND s.estado = 'ACTIVA' AND s.usuarioElegido = 0";
         List<OfertasEmpresa> ofertas = new ArrayList<>();
         OfertasEmpresa oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -204,6 +205,39 @@ public class ApplicantDB    {
             System.out.println("Error al listar oferta de empresa: " + e);
         }
         return ofertas;
+    }
+
+    public OfertaEmpresaInvitado listarOfertasCodigoOf(int codigoN) {
+        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa',s.empresa AS 'codigoEmpresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta  WHERE s.codigo = ? AND s.fechaLimite >= CURDATE() AND s.usuarioElegido = 0 AND s.estado = 'ACTIVA'";
+        OfertaEmpresaInvitado oferta = null;
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, codigoN);
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var descripcion = resultSet.getString("descripcion");
+                    var empresa = resultSet.getString("empresa");
+                    var codigoEmpresa = resultSet.getInt("codigoEmpresa");
+                    var categoria = resultSet.getInt("categoria");
+                    var estado = resultSet.getString("estado");
+                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
+                    var fechaLimite = resultSet.getDate("fechaLimite");
+                    var salario = resultSet.getBigDecimal("salario");
+                    var modalidad = resultSet.getString("modalidad");
+                    var ubicacion = resultSet.getString("ubicacion");
+                    var detalles = resultSet.getString("detalles");
+                    var usuarioElegido = resultSet.getInt("usuarioElegido");
+                    oferta = new OfertaEmpresaInvitado(codigo,nombre,descripcion,empresa,codigoEmpresa,categoria,estado,fechaPublicacion,fechaLimite,salario,modalidad,ubicacion,detalles,usuarioElegido);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar oferta de empresa: " + e);
+        }
+
+        return oferta;
     }
 
     public List<OfertasEmpresa> listarOfertasSugerencia(List<CategoriaUsuario> categoriaUsuarios, int codigon) {

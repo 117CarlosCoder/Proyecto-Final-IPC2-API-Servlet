@@ -21,7 +21,6 @@ import java.util.List;
 public class AdminDB {
 
     private final Connection conexion;
-    private Encriptador encriptador;
 
     public AdminDB(Connection conexion){ this.conexion = conexion;}
 
@@ -198,10 +197,10 @@ public class AdminDB {
     }
 
     public List<IngresoTotal> ingresoTotalFecha(String fechaA, String fechaB){
-        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5";
+        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADA' AND s.fecha BETWEEN ? AND ? GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5";
         if (fechaA == null || fechaA.isEmpty()|| fechaB == null|| fechaB.isEmpty()){
             System.out.println("otra query");
-            query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5";
+            query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADA' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5";
         }
         List<IngresoTotal> ingresoTotals = new ArrayList<>();
         IngresoTotal ingresoTotal = null;
@@ -232,7 +231,7 @@ public class AdminDB {
     }
 
     public List<IngresoTotal> ingresoTotalSinFecha(String fechaA, String fechaB){
-        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADO' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
+        String query = "SELECT u.codigo, u.nombre, COUNT(DISTINCT o.codigo) AS cantidadOfertas, SUM(s.cobro) AS total FROM usuarios u INNER JOIN ofertas o ON u.codigo = o.empresa LEFT JOIN cobroComision s ON s.codigoOferta = o.codigo WHERE o.estado = 'FINALIZADA' GROUP BY u.codigo, u.nombre ORDER BY total DESC LIMIT 5;";
         List<IngresoTotal> ingresoTotals = new ArrayList<>();
         IngresoTotal ingresoTotal = null;
 
@@ -305,23 +304,24 @@ public class AdminDB {
     }
 
     public void actualizarUsuario(User usuario){
-        String query = "UPDATE usuarios SET CUI=?,curriculum=?,direccion=?,email=?,fechaFundacion=?,fechaNacimiento=?,mision=?,nombre=?,username=?,vision=? where codigo=?";
+        String query = "UPDATE usuarios SET CUI=?,direccion=?,email=?,fechaFundacion=?,fechaNacimiento=?,mision=?,nombre=?,username=?,vision=? where codigo=?";
         try(var preparedStatement = conexion.prepareStatement(query)) {
             preparedStatement.setString(1,usuario.getCUI());
-            preparedStatement.setString(2,usuario.getCurriculum());
-            preparedStatement.setString(3,usuario.getDireccion());
-            preparedStatement.setString(4,usuario.getEmail());
-            preparedStatement.setDate(5,usuario.getFechaFundacion());
-            preparedStatement.setDate(6,usuario.getFechaNacimiento());
-            preparedStatement.setString(7,usuario.getMision());
-            preparedStatement.setString(8,usuario.getNombre());
-            preparedStatement.setString(9,usuario.getUsername());
-            preparedStatement.setString(10,usuario.getVision());
-            preparedStatement.setInt(11,usuario.getCodigo());
+            preparedStatement.setString(2,usuario.getDireccion());
+            preparedStatement.setString(3,usuario.getEmail());
+            preparedStatement.setDate(4,usuario.getFechaFundacion());
+            preparedStatement.setDate(5,usuario.getFechaNacimiento());
+            preparedStatement.setString(6,usuario.getMision());
+            preparedStatement.setString(7,usuario.getNombre());
+            preparedStatement.setString(8,usuario.getUsername());
+            preparedStatement.setString(9,usuario.getVision());
+            preparedStatement.setInt(10,usuario.getCodigo());
 
             preparedStatement.executeUpdate();
 
         } catch (SQLException e ) {
+
+            System.out.println(e);
             throw new RuntimeException(e);
         }
     }
@@ -430,8 +430,8 @@ public class AdminDB {
                     var nombre = resultSet.getString("nombre");
                     var direccion = resultSet.getString("direccion");
                     var username = resultSet.getString("username");
-                    var password = resultSet.getString("password");
-                    var sal = resultSet.getString("sal");
+                    var password = "";
+                    var sal = "";
                     var email = resultSet.getString("email");
                     var CUI = resultSet.getString("CUI");
                     var fechaNacimiento = resultSet.getDate("fechaNacimiento");
@@ -449,13 +449,48 @@ public class AdminDB {
         return usuario;
     }
 
+    public List<Usuarios> listarUsuariosCodigo(int codigon){
+        String query = "SELECT * FROM usuarios WHERE codigo <> ?";
+        List<Usuarios> usuarios = new ArrayList<>();
+        Usuarios usuario = null;
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, codigon);
+
+
+            try (var resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    var codigo = resultSet.getInt("codigo");
+                    var nombre = resultSet.getString("nombre");
+                    var direccion = resultSet.getString("direccion");
+                    var username = resultSet.getString("username");
+                    var password = "";
+                    var sal = "";
+                    var email = resultSet.getString("email");
+                    var CUI = resultSet.getString("CUI");
+                    var fechaNacimiento = resultSet.getDate("fechaNacimiento");
+                    var fechaFundacion= resultSet.getDate("fechaFundacion");
+                    var curriculum = resultSet.getString("curriculum");
+                    var suspension = resultSet.getBoolean("suspension");
+                    usuario = new Usuarios(codigo,nombre,direccion,username,password,sal,email,CUI, fechaNacimiento,fechaFundacion,new String[]{}, curriculum,null, suspension);
+                    usuarios.add(usuario);
+                }
+            }
+        }catch (SQLException e) {
+            System.out.println("Error al listar usuarios: " + e);
+        }
+        System.out.println("Listar usuarios : " +usuarios );
+        return usuarios;
+    }
+
     public void eliminarCategoria(int codigo ){
         eliminarCategoriaUsuario(codigo);
         List<Ofertas> ofertas = listarOFerta(codigo);
         for (Ofertas oferta:ofertas) {
-            eliminarCategoriaOfertaSolicitudes(oferta.getCodigo());
+            crearNotificacion("Por Favor actualice la categoria de la oferta " + oferta.getNombre() ,oferta.getCodigo(),oferta.getEmpresa());
         }
-        eliminarCategoriaOferta(codigo);
+        actualizarCategoriaOferta(codigo);
         try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoria WHERE codigo = ?")) {
             preparedStatement.setInt(1, codigo);
             preparedStatement.executeUpdate();
@@ -473,12 +508,13 @@ public class AdminDB {
         }
     }
 
-    public void eliminarCategoriaOferta(int codigo ){
-        try (var preparedStatement = conexion.prepareStatement("DELETE FROM ofertas WHERE categoria = ?")) {
+    public void actualizarCategoriaOferta(int codigo ){
+        try (var preparedStatement = conexion.prepareStatement("UPDATE  ofertas SET categoria = 0 WHERE categoria = ?")) {
             preparedStatement.setInt(1, codigo);
             preparedStatement.executeUpdate();
+
         } catch (SQLException e) {
-            System.out.println("Error al eliminar: " + e);
+            System.out.println("Error al actualizar categoria de ofertass: " + e);
         }
     }
 
@@ -488,6 +524,19 @@ public class AdminDB {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void crearNotificacion(String mensaje, int empresa, int usuario) {
+        String query = "INSERT INTO notificaciones VALUES(null,?,?,?)";
+
+        try (var preparedStatement = conexion.prepareStatement(query)) {
+            preparedStatement.setInt(1, empresa);
+            preparedStatement.setInt(2, usuario);
+            preparedStatement.setString(3, mensaje);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
     public List<Ofertas> listarOFerta(int codigon){

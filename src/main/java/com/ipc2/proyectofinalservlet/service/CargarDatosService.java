@@ -23,9 +23,20 @@ public class CargarDatosService {
         System.out.println("Crear comision");
         return cargaDB.crearComision(cantidad);
     }
+
+    public void vaciarBSe(){
+        System.out.println("Vaciar Base");
+        cargaDB.reiniciarBase();
+    }
+
+    public boolean validarBase(){
+        System.out.println("Validar Base");
+        return cargaDB.validandoBase();
+    }
+
     public Comision actualizarComision(BigDecimal cantidad){
         System.out.println("Actualizar comision");
-        if (cantidad.compareTo(BigDecimal.ZERO) <0) return null;
+        if (cantidad.compareTo(BigDecimal.ZERO) <=0) return null;
         return cargaDB.cambiarComision(cantidad);
     }
     public boolean listarComision(){

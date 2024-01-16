@@ -163,40 +163,70 @@ public class AdminController extends HttpServlet {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/gestionar-categorias-crear")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             Categoria categoria = (Categoria) userService.leerJson(resp,req,Categoria.class);
-            if (categoria == null)  resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            assert categoria != null;
-            if(!crearCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (categoria == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if(!crearCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion())){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;}
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
         if (uri.endsWith("/crear-registro-comision")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             RegistroComision registroComision = (RegistroComision) userService.leerJson(resp,req,RegistroComision.class);
-            if (registroComision == null)  resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            assert registroComision != null;
-            if(!registrarComision(conexion,registroComision.getComision(),registroComision.getFechaInicial())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (registroComision == null)  {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if(!registrarComision(conexion,registroComision.getComision(),registroComision.getFechaInicial())) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/crear-usuarios")) {
-            resp.setStatus(HttpServletResponse.SC_CREATED);
             UsuarioCreacion usuario = (UsuarioCreacion) userService.leerJson(resp,req, UsuarioCreacion.class);
-            if (usuario == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            assert usuario != null;
-            if (!crearUsuario(conexion,usuario.getUsuario())) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (usuario == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!crearUsuario(conexion,usuario.getUsuario())) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
             crearTelefonosUser(conexion,usuario.getUsuario().getUsername(),usuario.getTelefonos());
-
+            resp.setStatus(HttpServletResponse.SC_CREATED);
         }
 
         if (uri.endsWith("/crear-telefonos")) {
             List<NumTelefono> telefono = readJsonTelefonos(resp,req);
-            crearTelefonos(conexion,telefono);
+            if (telefono == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!crearTelefonos(conexion,telefono)) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_CREATED);
 
         }
 
         if (uri.endsWith("/crear-telefonos-usuario")) {
             List<TelefonosUsuario> telefono = readJsonTelefonosUsuario(resp,req);
-            crearTelefonosUsarioP2(conexion,telefono);
-
+            if (telefono == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!crearTelefonosUsarioP2(conexion,telefono)) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_CREATED);
         }
 
 
@@ -224,34 +254,59 @@ public class AdminController extends HttpServlet {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/gestionar-categorias-actualizar")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             Categoria categoria = (Categoria) userService.leerJson(resp,req,Categoria.class);
-            if (categoria == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            assert categoria != null;
-            if (actualizarCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion())==null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (categoria == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!actualizarCategoria(conexion,categoria.getCodigo(), categoria.getNombre(), categoria.getDescripcion())) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/actualizar-comision")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
-            Comision comision = (Comision) userService.leerJson(resp,req, Comision.class);
-            if (comision == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            assert comision != null;
-            if (actualizarComision(conexion,comision.getCantidad()) == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 
+            Comision comision = (Comision) userService.leerJson(resp,req, Comision.class);
+            if (comision == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (actualizarComision(conexion,comision.getCantidad()) == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/actualizar-usuario")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             User usuario = (User) userService.leerJson(resp,req,User.class);
-            if (usuario == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            if (!actualizarUsuario(conexion,usuario)) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (usuario == null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!actualizarUsuario(conexion,usuario)) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
         if (uri.endsWith("/actualizar-telefonos")) {
-            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
+
             List<NumTelefono> telefonos = readJsonTelefonos(resp,req);
-            if (telefonos == null) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            if (!actualizarTelefono(conexion,telefonos)) resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (telefonos == null){
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!actualizarTelefono(conexion,telefonos)) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            resp.setStatus(HttpServletResponse.SC_ACCEPTED);
         }
 
 
@@ -316,15 +371,15 @@ public class AdminController extends HttpServlet {
         return adminService.crearCategoria(codigo,nombre,descripcion);
     }
 
-    public void crearTelefonos(Connection conexion,List<NumTelefono> numTelefonos){
+    public boolean crearTelefonos(Connection conexion,List<NumTelefono> numTelefonos){
         adminService = new AdminService(conexion);
-        adminService.crearTelefonos(numTelefonos);
+        return adminService.crearTelefonos(numTelefonos);
 
     }
 
-    public void crearTelefonosUsarioP2(Connection conexion,List<TelefonosUsuario> numTelefonos){
+    public boolean crearTelefonosUsarioP2(Connection conexion,List<TelefonosUsuario> numTelefonos){
         adminService = new AdminService(conexion);
-        adminService.crearTelefonosUsarioP2(numTelefonos);
+        return adminService.crearTelefonosUsarioP2(numTelefonos);
     }
 
     private void crearTelefonosUser(Connection conexion, String user, Telefono telefono){
@@ -381,7 +436,7 @@ public class AdminController extends HttpServlet {
         return adminService.listarComision();
     }
 
-    public Categoria actualizarCategoria(Connection conexion, int codigo, String nombre, String descripcion){
+    public boolean actualizarCategoria(Connection conexion, int codigo, String nombre, String descripcion){
         adminService = new AdminService(conexion);
         return adminService.actualizarCategoria(codigo,nombre,descripcion);
     }

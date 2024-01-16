@@ -2,7 +2,6 @@ package com.ipc2.proyectofinalservlet.data;
 
 import com.ipc2.proyectofinalservlet.controller.UserController.Encriptador;
 import com.ipc2.proyectofinalservlet.model.Admin.Admin;
-import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdf;
 import com.ipc2.proyectofinalservlet.model.Applicant.UsuarioPdfJson;
 import com.ipc2.proyectofinalservlet.model.Applicant.Usuarios;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Categoria;
@@ -14,18 +13,10 @@ import com.ipc2.proyectofinalservlet.model.Employer.OfertasCarga;
 import com.ipc2.proyectofinalservlet.model.Employer.Tarjeta;
 import com.ipc2.proyectofinalservlet.model.User.User;
 
-import javax.sql.rowset.serial.SerialBlob;
-import java.security.NoSuchAlgorithmException;
-import java.sql.Blob;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 import static java.sql.Types.NULL;
@@ -36,6 +27,61 @@ public class CargaDB {
     private Encriptador encriptador;
 
     public CargaDB(Connection conexion){  this.conexion = conexion;}
+
+    public boolean validandoBase(){
+        String query = "SELECT * FROM usuarios ";
+        User user = null;
+        List<User> users = new ArrayList<>();
+        try(var select = conexion.prepareStatement(query)) {
+            ResultSet resultset = select.executeQuery();
+            while (resultset.next()) {
+                var codigo = resultset.getInt("codigo");
+                var nombre = resultset.getString("nombre");
+                var direccion = "";
+                var username = resultset.getString("username");
+                var password = "";
+                var email ="";
+                var cui = "";
+                var curriculum = "";
+                var rol = "";
+                var fechaNacimiento = resultset.getDate("fechaNacimiento");
+                var fechaFundacion = resultset.getDate("fechaFundacion");
+                var mision = "";
+                var vision ="";
+                user = new User(codigo, nombre,direccion,username,password,"",email,cui,fechaFundacion,fechaNacimiento,curriculum,rol,mision,vision,false);
+                users.add(user);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+
+        }
+        return !users.isEmpty();
+    }
+
+    public void reiniciarBase(){
+        DatabaseMetaData metaData = null;
+        try {
+            metaData = conexion.getMetaData();
+            ResultSet tables = metaData.getTables(null, null, "%", null);
+
+            while (tables.next()) {
+                String nombreDeTabla = tables.getString("TABLE_NAME");
+                vaciarTabla(conexion, nombreDeTabla);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private static void vaciarTabla(Connection conexion, String nombreDeTabla) throws SQLException {
+        String consulta = "DELETE FROM " + nombreDeTabla;
+
+        try (Statement statement = conexion.createStatement()) {
+            statement.executeUpdate(consulta);
+        }
+    }
 
     public void crearCategorias(List<Categoria> categorias){
         String query = "INSERT INTO categoria VALUES(null,?,?) ";
@@ -155,7 +201,7 @@ public class CargaDB {
 
     public void crearAdmin(Admin admin) {
         System.out.println("creando usuario administrador");
-        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,?,NULL,NULL,'Administrador',NULL,NULL,false)";
+        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,?,NULL,'Administrador',NULL,NULL,false)";
         encriptador = new Encriptador();
         String sal = encriptador.generarSecuencia();
 
@@ -179,55 +225,6 @@ public class CargaDB {
                 throw new RuntimeException(e);
             }
 
-    }
-
-    public void crearUsuarioSolicitante(List<Usuarios> usu) {
-        System.out.println("creando usuario solicitante");
-        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,NULL,?,NULL,?,NULL,NULL)";
-
-        for (Usuarios user : usu) {
-            try (var preparedStatement = conexion.prepareStatement(query)) {
-                preparedStatement.setInt(1, user.getCodigo());
-                preparedStatement.setString(2, user.getNombre());
-                preparedStatement.setString(3, user.getDireccion());
-                preparedStatement.setString(4, user.getUsername());
-                preparedStatement.setString(5, user.getPassword());
-                preparedStatement.setString(6, user.getEmail());
-                preparedStatement.setString(7, user.getCUI());
-                preparedStatement.setDate(8, user.getFechaNacimiento());
-                preparedStatement.setString(9, "Solicitante");
-
-                preparedStatement.executeUpdate();
-                System.out.println("Solicitante creado");
-            } catch (SQLException e) {
-                System.out.println("Error al consultar: " + e);
-            }
-        }
-    }
-
-    public void crearUsuariOEmpleador(List<Employer> usu) {
-        System.out.println("creando usuario empleador");
-
-        String query = "INSERT INTO usuarios VALUES(?,?,?,?,?,?,?,?,NULL,NULL,?,NULL,NULL)";
-        for (Employer user : usu) {
-            try (var preparedStatement = conexion.prepareStatement(query)) {
-                preparedStatement.setInt(1, user.getCodigo());
-                preparedStatement.setString(2, user.getNombre());
-                preparedStatement.setString(3, user.getDireccion());
-                preparedStatement.setString(4, user.getUsername());
-                preparedStatement.setString(5, user.getPassword());
-                preparedStatement.setString(6, user.getEmail());
-                preparedStatement.setString(7, user.getCUI());
-                preparedStatement.setDate(8, user.getFechaFundacion());
-                preparedStatement.setString(9, "Empleador");
-
-                preparedStatement.executeUpdate();
-                System.out.println("Empleador creado");
-
-            } catch (SQLException e) {
-                System.out.println("Error al consultar: " + e);
-            }
-        }
     }
 
     public void cargarUsuarioSolicitante(List<Usuarios> usu) {
