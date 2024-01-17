@@ -23,7 +23,7 @@ public class AdminService {
 
     public boolean crearCategoria(int codigo,String nombre, String descripcion){
         System.out.println("Crear Categoria");
-        if (codigo <= 0 || nombre.isEmpty() || descripcion.isEmpty()) return false;
+        if ( nombre.isEmpty() || descripcion.isEmpty()) return false;
         List<Categoria> categorias = adminDB.listarCategorias();
         for(Categoria categoria : categorias){
             if (Objects.equals(categoria.getNombre(), nombre)){
@@ -47,13 +47,7 @@ public class AdminService {
 
     public boolean actualizarCategoria(int codigo, String nombre, String descripcion){
         System.out.println("Actualizar Categoria");
-        if (codigo <= 0 || nombre.isEmpty() || descripcion.isEmpty()) return false;
-        List<Categoria> categorias = adminDB.listarCategorias();
-        for(Categoria categoria : categorias){
-            if (Objects.equals(categoria.getNombre(), nombre)){
-                return false;
-            }
-        }
+        if (nombre.isEmpty() || descripcion.isEmpty()) return false;
         adminDB.cambiarCategoria(codigo,nombre,descripcion);
         return true;
     }
@@ -75,9 +69,8 @@ public class AdminService {
                 }
             }
             return true;
-        }else{
-            return false;
         }
+        return  true;
     }
 
     public Categoria listarCategoriaCodigo(int codigo){
@@ -206,6 +199,13 @@ public class AdminService {
     public void eliminarCategoria(int codigo){
         System.out.println("Eliminar categoria");
         adminDB.eliminarCategoria(codigo);
+    }
+
+    public boolean eliminarOfetas(int codigo){
+        System.out.println("eliminar ofertas");
+        adminDB.eliminarSolicitu(codigo);
+        adminDB.eliminarOfertas(codigo);
+        return true;
     }
 
     public void suspenderUsuario(String username, boolean estado){

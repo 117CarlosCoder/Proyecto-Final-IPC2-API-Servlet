@@ -82,7 +82,6 @@ public class UserDB {
 
             preparedStatement.setString(1, username);
 
-
             try (var resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
                      codigo = resultSet.getInt("codigo");
@@ -117,20 +116,13 @@ public class UserDB {
         System.out.println("creando telefonos");
         String query = "INSERT INTO telefonos VALUES(NULL,?,?)";
 
-
             try (var preparedStatement = conexion.prepareStatement(query)) {
-
                 preparedStatement.setInt(1, listarCodigo(user));
                 preparedStatement.setInt(2, telefono);
                 preparedStatement.executeUpdate();
             }catch (SQLException e) {
                 System.out.println("Error al crear telefono : " + e);
             }
-
-
-
-
-
     }
 
     public void crearUsuariOEmpleador(User user, String contrasena) {
@@ -298,5 +290,68 @@ public class UserDB {
         }
 
         return  notificaciones;
+    }
+
+    public void eliminarOfertas(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM ofertas WHERE empresa = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarSolicitu(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM solicitudes WHERE codigoOferta = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarSolicituUsu(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM solicitudes WHERE usuario = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarEntrevistas(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM entrevistas WHERE usuario = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarNotificaciones(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM notificaciones WHERE codigoUsuario = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarTarjeta(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM tarjeta WHERE codigoUsuario = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
+    public void eliminarCategoria(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoriaUsuario WHERE codigoUsuario = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
     }
 }

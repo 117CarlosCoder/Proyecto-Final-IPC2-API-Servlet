@@ -356,7 +356,7 @@ public class ApplicantDB    {
     }
 
     public OfertasEmpresa listarOfertasCodigo(int codigoN, int usuarion) {
-        String query = "SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta AND u.usuario = ? WHERE  s.codigo = ? AND s.fechaLimite >= CURDATE() AND u.codigoOferta IS NULL AND ( s.estado = 'ENTREVISTA' OR s.estado = 'ACTIVA') AND s.usuarioElegido = 0";
+        String query = " SELECT s.codigo, s.nombre, s.descripcion, o.nombre AS 'empresa', s.categoria, s.estado, s.fechaPublicacion, s.fechaLimite, s.salario, s.modalidad, s.ubicacion, s.detalles, s.usuarioElegido FROM ofertas s JOIN usuarios o ON s.empresa = o.codigo LEFT JOIN solicitudes u ON s.codigo = u.codigoOferta AND u.usuario = ? WHERE  s.codigo = ? AND s.usuarioElegido = 0";
         OfertasEmpresa oferta = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
 
@@ -502,27 +502,44 @@ public class ApplicantDB    {
         }
         List<RegistroPostulacion> registroPostulacions = new ArrayList<>();
         RegistroPostulacion registroPostulacion = null;
-        try (var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1, usuarioN);
-            if (!fechaA.isEmpty() && !fechaB.isEmpty()) {
+        try {
+            conexion.setAutoCommit(false);
 
-                preparedStatement.setString(2, fechaA);
-                preparedStatement.setString(3, fechaB);
-            }
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, usuarioN);
+                if (!fechaA.isEmpty() && !fechaB.isEmpty()) {
+
+                    preparedStatement.setString(2, fechaA);
+                    preparedStatement.setString(3, fechaB);
+                }
 
 
-            try (var resultSet = preparedStatement.executeQuery()) {
-                while (resultSet.next()) {
-                    var codigo = resultSet.getInt("codigo");
-                    var usuario = resultSet.getInt("usuario");
-                    var oferta = resultSet.getString("oferta");
-                    var fecha = resultSet.getString("fecha");
-                    registroPostulacion = new RegistroPostulacion(codigo,usuario,oferta,fecha);
-                    registroPostulacions.add(registroPostulacion);
+                try (var resultSet = preparedStatement.executeQuery()) {
+                    while (resultSet.next()) {
+                        var codigo = resultSet.getInt("codigo");
+                        var usuario = resultSet.getInt("usuario");
+                        var oferta = resultSet.getString("oferta");
+                        var fecha = resultSet.getString("fecha");
+                        registroPostulacion = new RegistroPostulacion(codigo, usuario, oferta, fecha);
+                        registroPostulacions.add(registroPostulacion);
+                    }
                 }
             }
+            conexion.commit();
         }catch (SQLException e) {
             System.out.println("Error al registrar postulaciones retiradas: " + e);
+            try {
+                conexion.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                conexion.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
         return registroPostulacions;

@@ -33,6 +33,7 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Objects;
 
 @WebServlet(name = "AdminManagerServlet", urlPatterns = {"/v1/admin-servlet/*"})
 public class AdminController extends HttpServlet {
@@ -118,10 +119,8 @@ public class AdminController extends HttpServlet {
             System.out.println("usuario :" + codigo);
             if (usuarioPdf == null) resp.setStatus(HttpServletResponse.SC_CONFLICT);
             try (OutputStream out = resp.getOutputStream()) {
-                // Convierte los bytes del Blob a un InputStream
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(usuarioPdf.getPdfBytes());
 
-                // Copia el contenido del InputStream al OutputStream de la respuesta
                 IOUtils.copy(inputStream, out);
                 System.out.println("Salida : " + out);
             } catch (IOException e) {
@@ -454,7 +453,7 @@ public class AdminController extends HttpServlet {
 
     public void eliminarUsuario(Connection conexion,String username){
         userService = new UserService(conexion);
-        userService.eliminarUsuario(username);
+        userService.eliminarUsuario(username,conexion);
     }
 
     public void eliminarCategoria(Connection conexion,int codigo){

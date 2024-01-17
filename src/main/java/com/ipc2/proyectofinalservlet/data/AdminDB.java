@@ -485,19 +485,57 @@ public class AdminDB {
     }
 
     public void eliminarCategoria(int codigo ){
-        eliminarCategoriaUsuario(codigo);
-        List<Ofertas> ofertas = listarOFerta(codigo);
-        for (Ofertas oferta:ofertas) {
-            crearNotificacion("Por Favor actualice la categoria de la oferta " + oferta.getNombre() ,oferta.getCodigo(),oferta.getEmpresa());
+        try {
+
+            conexion.setAutoCommit(false);
+            eliminarCategoriaUsuario(codigo);
+            List<Ofertas> ofertas = listarOFerta(codigo);
+
+            for (Ofertas oferta:ofertas) {
+                crearNotificacion("Por Favor actualice la categoria de la oferta " + oferta.getNombre() ,oferta.getCodigo(),oferta.getEmpresa());
+            }
+
+            actualizarCategoriaOferta(codigo);
+
+            try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoria WHERE codigo = ?")) {
+                preparedStatement.setInt(1, codigo);
+                preparedStatement.executeUpdate();
+            }
+            conexion.commit();
+        }catch (SQLException e) {
+            try {
+                conexion.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                conexion.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
-        actualizarCategoriaOferta(codigo);
-        try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoria WHERE codigo = ?")) {
+    }
+
+    public void eliminarOfertas(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM ofertas WHERE codigo = ?")) {
             preparedStatement.setInt(1, codigo);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error al eliminar: " + e);
         }
     }
+
+    public void eliminarSolicitu(int codigo) {
+        try (var preparedStatement = conexion.prepareStatement("DELETE FROM solicitudes WHERE codigoOferta = ?")) {
+            preparedStatement.setInt(1, codigo);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar: " + e);
+        }
+    }
+
 
     public void eliminarCategoriaUsuario(int codigo ){
         try (var preparedStatement = conexion.prepareStatement("DELETE FROM categoriaUsuario WHERE codigoCategoria = ?")) {

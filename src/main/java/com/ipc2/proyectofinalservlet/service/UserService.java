@@ -2,6 +2,7 @@ package com.ipc2.proyectofinalservlet.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ipc2.proyectofinalservlet.data.EmployerDB;
 import com.ipc2.proyectofinalservlet.data.UserDB;
 import com.ipc2.proyectofinalservlet.model.Applicant.ActualizarContrasena;
 import com.ipc2.proyectofinalservlet.model.CargarDatos.Ofertas;
@@ -20,6 +21,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
@@ -27,6 +29,7 @@ import java.util.Random;
 
 public class UserService  {
     private final UserDB usuarioDB;
+    private EmployerDB employerDB ;
 
     public UserService(Connection conexion){
         this.usuarioDB = new UserDB(conexion);
@@ -57,11 +60,50 @@ public class UserService  {
 
     }
 
-    public void eliminarUsuario(String username){
+    public void eliminarUsuario(String username, Connection conexion){
         System.out.println("Eliminar Usuario");
-        usuarioDB.eliminarTelefonos(username);
-        usuarioDB.eliminarUsuario(username);
+        employerDB = new EmployerDB(conexion);
+        try {
+            conexion.setAutoCommit(false);
+            usuarioDB.eliminarTelefonos(username);
+            if (!employerDB.listarOfertasEmpresa(usuarioDB.listarCodigo(username)).isEmpty()) {
+                usuarioDB.eliminarTarjeta(usuarioDB.listarCodigo(username));
+                System.out.println("Tarjeta");
+                usuarioDB.eliminarNotificaciones(usuarioDB.listarCodigo(username));
+                System.out.println("Notificaciones");
+                usuarioDB.eliminarSolicitu(usuarioDB.listarCodigo(username));
+                System.out.println("Solicitudes");
+                usuarioDB.eliminarOfertas(usuarioDB.listarCodigo(username));
+                System.out.println("ofertas");
+                usuarioDB.eliminarUsuario(username);
+                System.out.println("usuario");
+            }else {
+                usuarioDB.eliminarCategoria(usuarioDB.listarCodigo(username));
+                usuarioDB.eliminarEntrevistas(usuarioDB.listarCodigo(username));
+                usuarioDB.eliminarSolicituUsu(usuarioDB.listarCodigo(username));
+                usuarioDB.eliminarNotificaciones(usuarioDB.listarCodigo(username));
+                usuarioDB.eliminarUsuario(username);
+            }
+            conexion.commit();
+        }catch (SQLException e) {
+            try {
+                conexion.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                conexion.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
     }
+
 
 
     public boolean crearUsuarioEmpleador(User user) {

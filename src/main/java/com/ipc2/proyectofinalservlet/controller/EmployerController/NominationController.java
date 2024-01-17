@@ -86,6 +86,7 @@ public class NominationController extends HelloServlet {
 
         if (uri.endsWith("/fase-entrevista")) {
             obtenerParanetros(req);
+            System.out.println(codigo);
             if (!employerService.faseEntrevista(codigo, user.getCodigo())){
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 return;

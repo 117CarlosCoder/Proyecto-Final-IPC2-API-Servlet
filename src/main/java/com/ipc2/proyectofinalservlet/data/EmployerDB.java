@@ -22,7 +22,6 @@ public class EmployerDB {
         this.conexion = conexion;
     }
 
-
     public void completarInformacion(String mision, String vision, int codigo) {
         String query = "UPDATE usuarios SET mision = ?, vision = ? WHERE codigo = ?";
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -304,7 +303,6 @@ public class EmployerDB {
                     var usuarioElegido = resultSet.getInt("usuarioElegido");
                     oferta = new Ofertas(codigo, nombre, descripcion, empresa, categoria, estado, fechaPublicacion, fechaLimite, salario, modalidad, ubicacion, detalles, usuarioElegido);
                     ofertas.add(oferta);
-                    ;
                 }
             }
         } catch (SQLException e) {
@@ -513,7 +511,7 @@ public class EmployerDB {
     }
 
     public List<EstadoSolicitudPostulante> listarPostulaciones(int codigoN, int empresan) {
-        String query = " SELECT s.codigo, s.codigoOferta, s.usuario, o.estado, o.nombre, u.nombre AS 'nombreUsuario' FROM solicitudes s  JOIN ofertas o ON s.codigoOferta = o.codigo  JOIN usuarios u ON s.usuario = u.codigo WHERE s.codigoOferta = ? AND NOT EXISTS (SELECT 1 FROM entrevistas e WHERE e.codigoOferta = s.codigoOferta AND e.usuario = s.usuario AND o.empresa = ?";
+        String query = " SELECT s.codigo, s.codigoOferta, s.usuario, o.estado, o.nombre, u.nombre AS 'nombreUsuario' FROM solicitudes s  JOIN ofertas o ON s.codigoOferta = o.codigo  JOIN usuarios u ON s.usuario = u.codigo WHERE s.codigoOferta = ? AND NOT EXISTS (SELECT 1 FROM entrevistas e WHERE e.codigoOferta = s.codigoOferta AND e.usuario = s.usuario AND o.empresa = ?)";
         List<EstadoSolicitudPostulante> solicitudes = new ArrayList<>();
         EstadoSolicitudPostulante solicitud = null;
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -598,6 +596,7 @@ public class EmployerDB {
         } catch (ParseException e) {
             e.printStackTrace();
         }
+        assert fechah != null;
         Time time = new Time(fechah.getTime());
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -691,7 +690,7 @@ public class EmployerDB {
         }
     }
 
-    public void contratar( int usuario, int codigo) {
+    /*public void contratar( int usuario, int codigo) {
         String query = "UPDATE ofertas SET usuarioElegido = ?, estado = 'FINALIZADA' WHERE codigo = ? ";
 
         try (var preparedStatement = conexion.prepareStatement(query)) {
@@ -711,7 +710,50 @@ public class EmployerDB {
         }
 
         crearCobroComision(codigo,usuario,listarOfertasCodigo(codigo).getNombre(),usuarioEmpresa(codigo),comision(),listarCantidadTarjeta(usuarioEmpresa(codigo)),listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()),listarOfertasCodigo(codigo).getCategoria());
+    }*/
+
+    public void contratar(int usuario, int codigo) {
+        String query1 = "UPDATE ofertas SET usuarioElegido = ?, estado = 'FINALIZADA' WHERE codigo = ?";
+        String query2 = "UPDATE tarjeta SET cantidad = ? WHERE codigoUsuario = ?";
+
+        try {
+            conexion.setAutoCommit(false);
+
+            try (var preparedStatement1 = conexion.prepareStatement(query1)) {
+                preparedStatement1.setInt(1, usuario);
+                preparedStatement1.setInt(2, codigo);
+                preparedStatement1.executeUpdate();
+            }
+
+            try (var preparedStatement2 = conexion.prepareStatement(query2)) {
+                preparedStatement2.setBigDecimal(1, listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()));
+                preparedStatement2.setInt(2, usuarioEmpresa(codigo));
+                preparedStatement2.executeUpdate();
+            }
+
+            crearCobroComision(codigo, usuario, listarOfertasCodigo(codigo).getNombre(), usuarioEmpresa(codigo),
+                    comision(), listarCantidadTarjeta(usuarioEmpresa(codigo)),
+                    listarCantidadTarjeta(usuarioEmpresa(codigo)).subtract(comision()),
+                    listarOfertasCodigo(codigo).getCategoria());
+
+            conexion.commit();
+        } catch (SQLException e) {
+            try {
+                conexion.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                conexion.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
+
+
 
     public void crearCobroComision(int oferta,int usuario, String nombreOferta, int empresa, BigDecimal cobro, BigDecimal cantidadTarjeta, BigDecimal Total, int categoria){
         String query = "INSERT INTO cobroComision VALUES(NULL,?,?,?,?,?,?,?,NOW(),?)";
@@ -825,9 +867,6 @@ public class EmployerDB {
                 preparedStatement.setString(3, estadon);
             }
 
-            //SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            //String fechaFormateada = dateFormat.format(fechan);
-
             try (var resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
                     var codigo = resultSet.getInt("codigo");
@@ -854,16 +893,17 @@ public class EmployerDB {
         }
             OfertasEmpresaFecha oferta = null;
             List<OfertasEmpresaFecha> ofertas = new ArrayList<>();
-        System.out.println(fechaAn);
-        System.out.println(fechaBn);
-        try (var preparedStatement = conexion.prepareStatement(query)) {
-            preparedStatement.setInt(1, empresan);
-            if(!fechaAn.isEmpty() & !fechaBn.isEmpty()) {
+            System.out.println(fechaAn);
+            System.out.println(fechaBn);
 
-                preparedStatement.setString(2, estadon);
-                preparedStatement.setDate(3, java.sql.Date.valueOf(fechaAn));
-                preparedStatement.setDate(4, java.sql.Date.valueOf(fechaBn));
-            }
+            try (var preparedStatement = conexion.prepareStatement(query)) {
+                preparedStatement.setInt(1, empresan);
+                if(!fechaAn.isEmpty() & !fechaBn.isEmpty()) {
+
+                    preparedStatement.setString(2, estadon);
+                    preparedStatement.setDate(3, java.sql.Date.valueOf(fechaAn));
+                    preparedStatement.setDate(4, java.sql.Date.valueOf(fechaBn));
+                }
 
 
             try (var resultSet = preparedStatement.executeQuery()) {
@@ -874,7 +914,6 @@ public class EmployerDB {
                     var empresa = resultSet.getString("empresa");
                     var categoria = resultSet.getInt("categoria");
                     var estado = resultSet.getString("estado");
-                    var fechaPublicacion = resultSet.getDate("fechaPublicacion");
                     var fechaLimite = resultSet.getDate("fechaLimite");
                     var salario = resultSet.getBigDecimal("salario");
                     var modalidad = resultSet.getString("salario");
